@@ -1,0 +1,15 @@
+# =============================================================
+# DEPENDÊNCIAS DE PRODUÇÃO
+# =============================================================
+
+-r base.txt
+
+# Servidor WSGI de alta performance
+gunicorn>=23.0.0
+
+# Suporte PostgreSQL / DATABASE_URL (Render, Railway, Heroku)
+dj-database-url>=2.2.0
+psycopg2-binary>=2.9.9
+
+# Segurança adicional — headers HTTP automáticos
+django-csp==3.8

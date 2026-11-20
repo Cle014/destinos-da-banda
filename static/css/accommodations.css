@@ -1,0 +1,344 @@
+/* =============================================================
+   Alojamento — Hotéis e Apartamentos de Curta Duração
+   ============================================================= */
+
+.acc-page {
+    background-color: var(--color-bg);
+    min-height: 80vh;
+}
+
+.acc-header {
+    background: linear-gradient(135deg, rgba(21, 27, 22, 0.94), rgba(45, 59, 46, 0.94)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 3rem 0 2.5rem;
+    border-bottom: 1px solid rgba(250, 248, 245, 0.08);
+}
+
+.acc-eyebrow {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-accent-light);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.acc-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 0.8rem;
+}
+
+.acc-subtitle {
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 650px;
+    margin-bottom: 1.5rem;
+}
+
+/* Sidebar & Search Filter */
+.acc-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    padding: 2.5rem 0;
+}
+
+@media (max-width: 991px) {
+    .acc-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.acc-sidebar {
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--color-light-border);
+    padding: 1.5rem;
+    height: fit-content;
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .acc-sidebar {
+    background: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
+}
+
+.acc-filter-group {
+    margin-bottom: 1.25rem;
+}
+
+.acc-filter-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.acc-select, .acc-input {
+    width: 100%;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--color-light-border);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.875rem;
+    background: var(--color-light-surface);
+    color: var(--color-text-dark);
+}
+
+[data-theme="dark"] .acc-select,
+[data-theme="dark"] .acc-input {
+    background: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
+    color: var(--color-text-light);
+}
+
+/* Cards Grid */
+.acc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+    gap: 1.5rem;
+}
+
+.acc-card {
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--color-light-border);
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+[data-theme="dark"] .acc-card {
+    background: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
+}
+
+.acc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-light);
+    color: inherit;
+}
+
+.acc-card-img-wrap {
+    position: relative;
+    height: 210px;
+    overflow: hidden;
+    background: #222;
+}
+
+.acc-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.acc-card:hover .acc-card-img {
+    transform: scale(1.05);
+}
+
+.acc-type-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(45, 59, 46, 0.92);
+    color: white;
+    padding: 0.3rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    backdrop-filter: blur(5px);
+    z-index: 2;
+}
+
+.acc-type-apartment {
+    background: rgba(212, 91, 22, 0.92);
+}
+
+.acc-rating-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(0, 0, 0, 0.75);
+    color: #ffc107;
+    padding: 0.25rem 0.6rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.acc-card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.acc-card-location {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.acc-card-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: var(--color-text-dark);
+}
+
+[data-theme="dark"] .acc-card-name {
+    color: var(--color-text-light);
+}
+
+.acc-card-desc {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.acc-card-specs {
+    display: flex;
+    gap: 0.85rem;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-light-border);
+}
+
+[data-theme="dark"] .acc-card-specs {
+    border-bottom-color: var(--color-dark-border);
+}
+
+.acc-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.acc-price-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-primary);
+}
+
+.acc-price-period {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.btn-acc-details {
+    padding: 0.45rem 1rem;
+    border-radius: var(--border-radius-full);
+    font-size: 0.82rem;
+    font-weight: 600;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.btn-acc-details:hover {
+    background: var(--color-primary-dark);
+    color: white;
+}
+
+/* Detail Page Specific */
+.acc-detail-hero {
+    position: relative;
+    height: 460px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 3rem;
+    color: white;
+}
+
+.acc-detail-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%);
+}
+
+.acc-booking-card {
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius-lg);
+    border: 2px solid var(--color-primary);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 90px;
+}
+
+[data-theme="dark"] .acc-booking-card {
+    background: var(--color-dark-surface);
+}
+
+.acc-hero-badge {
+    display: inline-block;
+    background: var(--color-accent);
+    color: #fff;
+    padding: 0.35rem 0.95rem;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.acc-amenity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
+    background: var(--color-light-subtle);
+    border: 1px solid var(--color-light-border);
+    color: var(--color-text-dark);
+    border-radius: var(--border-radius-md);
+    font-size: 0.84rem;
+    font-weight: 500;
+    margin: 0.25rem;
+}
+
+.acc-amenity-badge i {
+    color: var(--color-accent);
+}
+
+[data-theme="dark"] .acc-amenity-badge {
+    background: var(--color-dark-subtle);
+    border-color: var(--color-dark-border);
+    color: var(--color-text-light);
+}
+
+[data-theme="dark"] .acc-amenity-badge i {
+    color: var(--color-accent-light);
+}

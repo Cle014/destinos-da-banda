@@ -1,0 +1,468 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Início{% endblock %}
+{% block meta_description %}Descubra Angola como nunca viu — destinos únicos, guias locais certificados e roteiros prontos a percorrer.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="hero-section" aria-label="Destinos em destaque">
+    <div class="swiper hero-swiper">
+        <div class="swiper-wrapper">
+            {% for slide in hero_slides %}
+            <div class="swiper-slide hero-slide hero-slide--{{ forloop.counter }}">
+                <div class="hero-slide-bg"
+                     style="background-image: url('{{ slide.image }}');"
+                     role="img"
+                     aria-label="{{ slide.title }}"></div>
+                <div class="hero-slide-overlay hero-overlay--{{ forloop.counter }}" aria-hidden="true"></div>
+                <div class="container">
+                    <div class="hero-content hero-content--{{ forloop.counter }}">
+                        <div class="hero-location-badge">
+                            <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                            {{ slide.location }}
+                        </div>
+                        <h1 class="hero-title hero-title--{{ forloop.counter }}">
+                            {{ slide.title }}
+                        </h1>
+                        <p class="hero-subtitle">
+                            {{ slide.subtitle }}
+                        </p>
+                        <a href="{{ slide.cta_url }}"
+                           class="hero-cta hero-cta--{{ forloop.counter }}">
+                            {{ slide.cta_text }}
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-prev" aria-label="Slide anterior"></div>
+        <div class="swiper-button-next" aria-label="Próximo slide"></div>
+    </div>
+    <div class="hero-slide-counter" aria-hidden="true">
+        <span id="heroCurrentSlide">01</span> / {{ hero_slides|length|stringformat:"02d" }}
+    </div>
+</section>
+
+
+<section class="search-section" aria-label="Pesquisar destinos">
+    <div class="container">
+        <form action="{% url 'destinations:list' %}" method="get" role="search">
+            <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Que lugar do Huambo quer descobrir hoje?"
+                       aria-label="Pesquisar destinos"
+                       autocomplete="off">
+                <div class="search-divider" aria-hidden="true"></div>
+                <select name="province" class="search-category-select" aria-label="Filtrar por província">
+                    <option value="huambo">Huambo</option>
+                </select>
+                <button type="submit" class="search-btn">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    Descobrir
+                </button>
+            </div>
+        </form>
+        <div class="search-tags">
+            <span class="search-tag-label">Destinos em alta no Huambo:</span>
+            <a href="{% url 'destinations:list' %}?search=Moco" class="search-tag">Morro do Moco</a>
+            <a href="{% url 'destinations:list' %}?search=Nganda" class="search-tag">Pedras de Nganda</a>
+            <a href="{% url 'destinations:list' %}?search=Gove" class="search-tag">Albufeira do Gove</a>
+            <a href="{% url 'destinations:list' %}?search=Bailundo" class="search-tag">Ombala do Bailundo</a>
+            <a href="{% url 'destinations:list' %}?search=Kavongue" class="search-tag">Reserva do Kavongue</a>
+        </div>
+    </div>
+</section>
+
+
+<section class="stats-section" aria-label="Números do site">
+    <div class="container">
+        <div class="stats-inner">
+            {% for stat in stats %}
+            <div class="stat-item" data-aos="fade-up" data-aos-delay="{{ forloop.counter0 }}70">
+                <div class="stat-value">{{ stat.value }}</div>
+                <div class="stat-label">{{ stat.label }}</div>
+            </div>
+            {% if not forloop.last %}
+            <div class="stat-sep" aria-hidden="true"></div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Faixa Regional em Destaque & Planeador -->
+        <div class="home-wedge-banner">
+            <div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="home-wedge-badge">
+                        <i class="fas fa-compass" aria-hidden="true"></i> Destino em Destaque: {{ wedge.active_province_label }}
+                    </span>
+                    <span class="text-muted small">Curadoria oficial com parceiros e experiências verificadas no terreno</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for key, mod in wedge.modules.items %}
+                    {% if mod.is_enabled %}
+                    <a href="{% url mod.url_name %}" class="home-wedge-chip">
+                        <i class="{{ mod.icon }}" style="color: var(--color-accent);" aria-hidden="true"></i>
+                        <span>{{ mod.label }}: <strong>{{ mod.count }}</strong></span>
+                    </a>
+                    {% else %}
+                    <span class="home-wedge-chip opacity-75" title="Em expansão para atingir {{ mod.threshold }} parceiros verificados">
+                        <i class="{{ mod.icon }}" aria-hidden="true"></i>
+                        <span>{{ mod.label }} ({{ mod.count }}/{{ mod.threshold }})</span>
+                    </span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'routes:planner' %}" class="btn btn-primary-custom btn-sm">
+                    <i class="fas fa-route me-1" aria-hidden="true"></i> Montar Roteiro & Orçamento
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="categories-section" aria-labelledby="cat-heading">
+    <div class="container">
+        <div class="cats-header" data-aos="fade-up">
+            <div>
+                <p class="cats-eyebrow">O que deseja explorar</p>
+                <h2 class="cats-title" id="cat-heading">Categorias Turísticas</h2>
+            </div>
+            <p class="cats-sub">
+                Do pico do Morro do Moco às águas da Albufeira do Gove — o Huambo em toda a sua grandeza.
+            </p>
+        </div>
+        <div class="cats-grid">
+            {% for category in categories %}
+            <a href="{% url 'destinations:list' %}?category={{ category.slug }}"
+               class="cat-card cat-card--{{ forloop.counter }}"
+               style="--card-accent: {{ category.color }};"
+               aria-label="{{ category.name }}"
+               data-aos="fade-up"
+               data-aos-delay="{{ forloop.counter0 }}40">
+                <div class="cat-icon" style="background: {{ category.color }};" aria-hidden="true">
+                    <i class="{{ category.icon }}"></i>
+                </div>
+                <span class="cat-name">{{ category.name }}</span>
+                <span class="cat-count">{{ category.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+
+<section class="destinations-section" aria-labelledby="dest-heading">
+    <div class="container">
+        <div class="dest-section-header" data-aos="fade-up">
+            <div>
+                <p class="dest-eyebrow">Os Mais Visitados</p>
+                <h2 class="dest-section-title" id="dest-heading">Destinos em Destaque</h2>
+            </div>
+            <a href="{% url 'destinations:list' %}" class="dest-see-all">
+                Conhecer todos <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="dest-editorial-grid">
+            {% for destination in featured_destinations %}
+
+            {% if forloop.counter == 1 %}
+            <a href="{% url 'destinations:detail' destination.slug %}"
+               class="dest-card dest-card--hero"
+               aria-label="{{ destination.name }}"
+               data-aos="fade-right">
+                <img src="{{ destination.image }}" alt="{{ destination.name }}" loading="lazy" class="dest-card-img">
+                <div class="dest-card-overlay"></div>
+                <div class="dest-card-badges">
+                    <span class="dest-badge-cat">{{ destination.category }}</span>
+                    {% if destination.is_featured %}
+                    <span class="dest-badge-feat"><i class="fas fa-star"></i> Destaque</span>
+                    {% endif %}
+                </div>
+                <div class="dest-hero-body">
+                    <p class="dest-hero-loc"><i class="fas fa-map-marker-alt"></i> {{ destination.province }}</p>
+                    <h3 class="dest-hero-title">{{ destination.name }}</h3>
+                    <p class="dest-hero-desc">{{ destination.description }}</p>
+                    <span class="dest-hero-link">Conhecer este destino <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </a>
+
+            <div class="dest-editorial-aside">
+            {% else %}
+
+            <a href="{% url 'destinations:detail' destination.slug %}"
+               class="dest-card dest-card--sm dest-card--{{ forloop.counter }}"
+               aria-label="{{ destination.name }}"
+               data-aos="fade-up"
+               data-aos-delay="{% if forloop.counter == 2 %}0{% elif forloop.counter == 3 %}80{% elif forloop.counter == 4 %}0{% elif forloop.counter == 5 %}80{% else %}130{% endif %}">
+                <div class="dest-sm-img-wrap">
+                    <img src="{{ destination.image }}" alt="{{ destination.name }}" loading="lazy">
+                    <span class="dest-badge-cat">{{ destination.category }}</span>
+                </div>
+                <div class="dest-sm-body">
+                    <p class="dest-sm-loc"><i class="fas fa-map-marker-alt"></i> {{ destination.province }}</p>
+                    <h3 class="dest-sm-title">{{ destination.name }}</h3>
+                    <p class="dest-sm-desc">{{ destination.description|truncatechars:60 }}</p>
+                </div>
+                <div class="dest-sm-arrow" aria-hidden="true"><i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            {% endif %}
+            {% if forloop.last %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+
+<section class="routes-preview-section" aria-labelledby="routes-home-heading">
+    <div class="container">
+        <div class="routes-preview-header">
+            <div>
+                <p class="section-eyebrow">Rotas & Itinerários</p>
+                <h2 class="routes-section-title" id="routes-home-heading">
+                    Itinerários prontos<br>pelo Huambo
+                </h2>
+                <p class="section-subtitle">
+                    Da Cidade do Huambo ao Londuimbali, da Caála ao Bailundo — percursos completos por dia.
+                </p>
+            </div>
+            <a href="{% url 'routes:list' %}" class="btn-see-all">
+                Ver todos <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="routes-preview-grid">
+            <a href="{% url 'routes:list' %}" class="route-preview-card route-preview-card--main">
+                <div class="route-preview-bg" style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900&q=80');"></div>
+                <div class="route-preview-overlay"></div>
+                <div class="route-preview-content">
+                    <div class="route-preview-badge">
+                        <span class="rp-days">3 dias</span>
+                        <span class="rp-diff moderate">Moderado</span>
+                    </div>
+                    <h3 class="route-preview-title">Expedição ao Teto de Angola</h3>
+                    <p class="route-preview-sub">Huambo · Ecunha · Londuimbali (Morro do Moco)</p>
+                </div>
+            </a>
+            <div class="route-preview-col">
+                <a href="{% url 'routes:list' %}" class="route-preview-card">
+                    <div class="route-preview-bg" style="background-image: url('https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=600&q=80');"></div>
+                    <div class="route-preview-overlay"></div>
+                    <div class="route-preview-content">
+                        <div class="route-preview-badge">
+                            <span class="rp-days">2 dias</span>
+                            <span class="rp-diff easy">Fácil</span>
+                        </div>
+                        <h3 class="route-preview-title">Rota Granítica & Albufeira</h3>
+                        <p class="route-preview-sub">Caála · Pedras de Nganda · Barragem do Gove</p>
+                    </div>
+                </a>
+                <a href="{% url 'routes:list' %}" class="route-preview-card">
+                    <div class="route-preview-bg" style="background-image: url('https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&q=80');"></div>
+                    <div class="route-preview-overlay"></div>
+                    <div class="route-preview-content">
+                        <div class="route-preview-badge">
+                            <span class="rp-days">2 dias</span>
+                            <span class="rp-diff easy">Fácil</span>
+                        </div>
+                        <h3 class="route-preview-title">Caminhos Reais do Planalto</h3>
+                        <p class="route-preview-sub">Huambo · Bailundo · Ombala Grande</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="cultural-section" aria-labelledby="cultural-heading">
+    <div class="container cultural-container">
+        <div class="col-12 col-lg-6" data-aos="fade-right">
+            <p class="cultural-label">Cultura & Tradição do Planalto</p>
+            <h2 class="cultural-title" id="cultural-heading">
+                11 municípios.<br>A alma do Planalto Central.
+            </h2>
+            <p class="cultural-description">
+                Coração histórico da cultura Ovimbundu, a província do Huambo encanta pelo seu clima ameno de altitude,
+                pelas históricas Ombalas do Bailundo e do Wambu, pelas nascentes de grandes rios e pela hospitalidade
+                inigualável das suas gentes.
+            </p>
+            <div class="cultural-highlights-grid">
+                <div class="cultural-hl-card">
+                    <span class="cultural-hl-tag">Identidade</span>
+                    <h4>Tradição Umbundu</h4>
+                    <p>Costumes, provérbios e sabedoria ancestral preservados nas Ombalas do Planalto.</p>
+                </div>
+                <div class="cultural-hl-card">
+                    <span class="cultural-hl-tag">Gastronomia</span>
+                    <h4>Sabores das Terras Altas</h4>
+                    <p>Do pirão de milho com lombi e feijão às frutas frescas de clima temperado e kissângua.</p>
+                </div>
+                <div class="cultural-hl-card">
+                    <span class="cultural-hl-tag">Natureza</span>
+                    <h4>Teto de Angola</h4>
+                    <p>O Morro do Moco a 2.620 metros de altitude e florestas afromontanas únicas.</p>
+                </div>
+                <div class="cultural-hl-card">
+                    <span class="cultural-hl-tag">Património</span>
+                    <h4>História dos Reinos</h4>
+                    <p>O legado do Rei Ekuikui II, Katyavala e a arquitetura histórica da Cidade Vida.</p>
+                </div>
+            </div>
+            <a href="{% url 'destinations:list' %}" class="btn-primary-custom mt-3">
+                Conhecer o Huambo
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="cultural-images-col" data-aos="fade-left" data-aos-delay="120">
+            <div class="cultural-images">
+                <div class="cultural-img-item cultural-img-main">
+                    <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80"
+                         alt="Morro do Moco, Huambo" loading="lazy">
+                </div>
+                <div class="cultural-img-item">
+                    <img src="https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=400&q=80"
+                         alt="Paisagem do Planalto Central" loading="lazy">
+                </div>
+                <div class="cultural-img-item">
+                    <img src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&q=80"
+                         alt="Pedras de Nganda e Kawe" loading="lazy">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="guides-preview-home" aria-labelledby="guides-home-heading">
+    <div class="container">
+        <div class="guides-home-inner">
+            <div class="guides-home-text" data-aos="fade-right">
+                <p class="guides-home-eyebrow">Profissionais Locais do Huambo</p>
+                <h2 class="guides-home-title" id="guides-home-heading">
+                    Guias que conhecem<br>cada trilho, cada história
+                </h2>
+                <p class="guides-home-body">
+                    Profissionais verificados, nascidos e criados no Planalto Central.
+                    Falam Português e Umbundu, conhecem os trilhos secretos da Caála e de Londuimbali,
+                    e sabem quando o sol pinta o Morro do Moco de vermelho.
+                </p>
+                <div class="guides-home-features">
+                    <div class="guides-home-feature">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Identidade verificada</span>
+                    </div>
+                    <div class="guides-home-feature">
+                        <i class="fas fa-star"></i>
+                        <span>Avaliados por viajantes reais</span>
+                    </div>
+                    <div class="guides-home-feature">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>Contacto directo por WhatsApp</span>
+                    </div>
+                    <div class="guides-home-feature">
+                        <i class="fas fa-language"></i>
+                        <span>Português, Umbundu e Inglês</span>
+                    </div>
+                </div>
+                <a href="{% url 'guides:list' %}" class="guides-home-cta">
+                    Encontrar um guia
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="guides-home-visual" data-aos="fade-left" data-aos-delay="100">
+                <div class="guides-stat-card guides-stat-card--1">
+                    <div class="guides-stat-num">4.9</div>
+                    <div class="guides-stat-stars" aria-label="Avaliação 5 estrelas">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <div class="guides-stat-label">Avaliação média</div>
+                </div>
+                <div class="guides-home-img-stack">
+                    <img src="https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=500&q=80"
+                         alt="Paisagem do Huambo" loading="lazy">
+                </div>
+                <div class="guides-stat-card guides-stat-card--2">
+                    <div class="guides-stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="guides-stat-label">11 municípios<br>do Huambo cobertos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="cta-section" aria-labelledby="cta-heading">
+    <div class="container">
+        <div class="cta-inner">
+            <img src="{% static 'images/logo-icon-light.png' %}"
+                 alt="Emblema Destinos da Banda"
+                 aria-hidden="true"
+                 class="cta-logo">
+            <h2 class="cta-title" id="cta-heading">O Huambo está à sua espera</h2>
+            <p class="cta-description">
+                Destinos autênticos no Planalto Central, guias locais verificados e percursos memoráveis pela província do Huambo.
+                A sua próxima viagem começa aqui.
+            </p>
+            <div class="cta-buttons">
+                <a href="{% url 'destinations:list' %}" class="btn-cta-white">
+                    Explorar Destinos
+                    <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+                <a href="{% url 'routes:list' %}" class="btn-cta-outline">
+                    Ver Roteiros
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof Swiper === 'undefined') return;
+    const heroSwiper = new Swiper('.hero-swiper', {
+        effect: 'fade',
+        fadeEffect: { crossFade: true },
+        autoplay: { delay: 6500, disableOnInteraction: false, pauseOnMouseEnter: true },
+        loop: true,
+        speed: 1000,
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+            renderBullet: function (index, className) {
+                return '<button class="' + className + '" aria-label="Slide ' + (index + 1) + '"></button>';
+            },
+        },
+        navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+        on: {
+            slideChange: function () {
+                const c = document.getElementById('heroCurrentSlide');
+                if (c) c.textContent = (this.realIndex + 1).toString().padStart(2, '0');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

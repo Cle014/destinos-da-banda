@@ -1,0 +1,91 @@
+{% load static %}
+<footer class="footer-main" role="contentinfo" aria-label="Rodapé do site">
+    <div class="container">
+        <div class="row g-4 g-lg-5">
+            <div class="col-12 col-lg-4">
+                <div class="footer-logo">
+                    <img src="{% static 'images/logo-light.png' %}"
+                         alt="Destinos da Banda"
+                         class="footer-logo-img">
+                    <div class="footer-brand-text">
+                        <span class="f-brand-title">DESTINOS</span>
+                        <span class="f-brand-sub">DA BANDA</span>
+                    </div>
+                </div>
+                <p class="footer-tagline">
+                    Plataforma digital de turismo angolano.
+                    Descubra destinos autênticos, rotas memoráveis e a
+                    riqueza natural e cultural de Angola.
+                </p>
+                <div class="footer-social" aria-label="Redes sociais">
+                    <a href="{{ social_links.facebook }}"
+                       aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                    </a>
+                    <a href="{{ social_links.instagram }}"
+                       aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-instagram" aria-hidden="true"></i>
+                    </a>
+                    <a href="{{ social_links.twitter }}"
+                       aria-label="Twitter" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-twitter" aria-hidden="true"></i>
+                    </a>
+                    <a href="{{ social_links.youtube }}"
+                       aria-label="YouTube" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-youtube" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <h3 class="footer-heading">Explorar</h3>
+                <ul class="footer-links">
+                    <li><a href="{% url 'destinations:list' %}">Destinos & Visitas</a></li>
+                    <li><a href="{% url 'destinations:list' %}?category=agroturismo">Agroturismo & Mundo Rural</a></li>
+                    <li><a href="{% url 'destinations:article_list' %}">Blog Cultural & Histórias</a></li>
+                    <li><a href="{% url 'gallery:index' %}">Galeria de Fotos</a></li>
+                    <li><a href="{% url 'routes:list' %}">Rotas & Roteiros</a></li>
+                    <li><a href="{% url 'events:list' %}">Eventos & Lazer</a></li>
+                    <li><a href="{% url 'guides:list' %}">Guias Locais</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h3 class="footer-heading">Serviços</h3>
+                <ul class="footer-links">
+                    <li><a href="{% url 'accommodations:list' %}">Alojamentos</a></li>
+                    <li><a href="{% url 'guides:list' %}">Guias Certificados</a></li>
+                    <li><a href="{% url 'events:list' %}">Actividades & Eventos</a></li>
+                    <li><a href="{% url 'routes:list' %}">Itinerários por Dia</a></li>
+                    <li><a href="{% url 'accommodations:list' %}">Reservas Online</a></li>
+                </ul>
+            </div>
+            <div class="col-12 col-lg-3">
+                <h3 class="footer-heading">Contacto</h3>
+                <ul class="footer-links">
+                    <li>
+                        <a href="mailto:{{ contact_email }}">
+                            <i class="fas fa-envelope me-1" aria-hidden="true"></i>
+                            {{ contact_email }}
+                        </a>
+                    </li>
+                    <li>
+                        <span>
+                            <i class="fas fa-map-marker-alt me-1" aria-hidden="true"></i>
+                            Huambo, Angola
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <hr class="footer-divider">
+        <div class="footer-bottom">
+            <p class="footer-copyright">
+                &copy; {{ site_year }} {{ site_name }}. Todos os direitos reservados.
+            </p>
+            <nav class="footer-bottom-links" aria-label="Links legais">
+                <a href="#">Privacidade</a>
+                <a href="#">Termos de Uso</a>
+                <a href="#">Cookies</a>
+            </nav>
+        </div>
+    </div>
+</footer>

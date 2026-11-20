@@ -1,0 +1,517 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Planeador de Viagem — {{ province_label }}{% endblock %}
+{% block meta_description %}Monte o seu roteiro em {{ province_label }} em segundos: escolha os dias, veja o percurso no mapa, o orçamento em Kwanzas e reserve tudo num só lugar.{% endblock %}
+
+{% block extra_css %}
+{% if has_map %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endif %}
+<link rel="stylesheet" href="{% static 'css/routes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="routes-page pb-5">
+
+    <!-- Cabeçalho Simples e Directo -->
+    <section class="sp-hero">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <span class="badge rounded-pill mb-2" style="background: #D45B16; font-weight: 600;">
+                        <i class="fas fa-compass me-1"></i> Roteiro à sua medida em 3 passos
+                    </span>
+                    <h1 class="h2 fw-bold text-white mb-1">Planear Viagem — {{ province_label }}</h1>
+                    <p class="text-white-50 mb-0 small">
+                        Escolha os dias e quem vai consigo. Nós organizamos as visitas pela ordem mais próxima e calculamos o orçamento em Kwanzas.
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ whatsapp_share_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-success rounded-pill px-3">
+                        <i class="fab fa-whatsapp me-1"></i> Enviar por WhatsApp
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="navigator.clipboard.writeText('{{ share_url }}'); this.innerHTML='<i class=\'fas fa-check me-1\'></i> Copiado!';">
+                        <i class="fas fa-link me-1"></i> Copiar Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+
+        <!-- PASSO 1: Barra Rápida (Onde, Quando, Duração, Pessoas) -->
+        <div class="sp-config-bar mb-4">
+            <form method="get" action="{% url 'routes:planner' %}" id="plannerFilterForm" class="row g-2 g-md-3 align-items-end">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label small fw-bold text-muted mb-1" for="id_province">
+                        <i class="fas fa-map-marker-alt text-danger me-1"></i>1. Para onde vai?
+                    </label>
+                    <select id="id_province" name="province" class="form-select" onchange="this.form.submit()">
+                        {% for val, label in provinces %}
+                        <option value="{{ val }}" {% if province == val %}selected{% endif %}>
+                            {{ label }}{% if val == 'huambo' %} (Recomendado){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-6 col-lg-3">
+                    <label class="form-label small fw-bold text-muted mb-1" for="id_start_date">
+                        <i class="fas fa-calendar-alt text-success me-1"></i>2. Data de partida
+                    </label>
+                    <input type="date" id="id_start_date" name="start_date" value="{{ start_date }}" class="form-control">
+                </div>
+
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <label class="form-label small fw-bold text-muted mb-1" for="id_days">
+                        <i class="fas fa-clock text-success me-1"></i>3. Quantos dias?
+                    </label>
+                    <select id="id_days" name="days" class="form-select" onchange="this.form.submit()">
+                        <option value="1" {% if num_days == 1 %}selected{% endif %}>1 dia (Bate-volta)</option>
+                        <option value="2" {% if num_days == 2 %}selected{% endif %}>2 dias (Fim de semana)</option>
+                        <option value="3" {% if num_days == 3 %}selected{% endif %}>3 dias</option>
+                        <option value="4" {% if num_days == 4 %}selected{% endif %}>4 dias</option>
+                        <option value="5" {% if num_days == 5 %}selected{% endif %}>5 dias</option>
+                        <option value="7" {% if num_days == 7 %}selected{% endif %}>7 dias (1 semana)</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <label class="form-label small fw-bold text-muted mb-1" for="id_travelers">
+                        <i class="fas fa-user-friends text-success me-1"></i>4. Viajantes
+                    </label>
+                    <select id="id_travelers" name="travelers" class="form-select" onchange="this.form.submit()">
+                        {% for n in "12345678"|make_list %}
+                        <option value="{{ forloop.counter }}" {% if travelers == forloop.counter %}selected{% endif %}>
+                            {{ forloop.counter }} pessoa{{ forloop.counter|pluralize:"s" }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <button type="submit" class="btn btn-primary-custom w-100 justify-content-center py-2">
+                        <i class="fas fa-sync-alt me-1"></i> Actualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="row g-4">
+            <!-- ==================== COLUNA ESQUERDA: ROTEIRO VISUAL ==================== -->
+            <div class="col-12 col-lg-7">
+
+                <!-- 1. Onde Ficar & Guia Local -->
+                <div class="sp-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="sp-step-badge">1</span>
+                            <h2 class="h6 fw-bold mb-0">Estadia & Guia em {{ province_label }}</h2>
+                        </div>
+                        <small class="text-muted">Pode trocar ou remover a qualquer momento</small>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Alojamento -->
+                        <div class="col-12 col-md-6">
+                            <div class="sp-partner-box">
+                                <div>
+                                    <div class="small fw-bold text-uppercase text-muted mb-2" style="font-size: 0.7rem;">
+                                        <i class="fas fa-bed text-success me-1"></i>Alojamento ({{ num_days }} noite{{ num_days|pluralize:"s" }})
+                                    </div>
+                                    {% if selected_acc %}
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <img src="{{ selected_acc.image }}" alt="{{ selected_acc.title }}" class="sp-partner-img">
+                                        <div>
+                                            <div class="fw-bold small text-dark">{{ selected_acc.title }}</div>
+                                            <div class="small text-success fw-semibold">{{ selected_acc.price_range_aoa }}/noite</div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="py-2 small text-muted">
+                                        <i class="fas fa-info-circle me-1"></i> Sem alojamento incluído
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <form method="post" action="{% url 'routes:plan_add' %}" class="mt-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="item_type" value="accommodation">
+                                    <input type="hidden" name="province" value="{{ province }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <select name="item_id" class="form-select form-select-sm" aria-label="Escolher alojamento" onchange="this.form.submit()">
+                                        <option value="none" {% if not selected_acc %}selected{% endif %}>— Sem alojamento —</option>
+                                        {% for a in available_accommodations %}
+                                        <option value="{{ a.pk }}" {% if selected_acc and selected_acc.id == a.pk %}selected{% endif %}>
+                                            {{ a.name }} ({{ a.formatted_price_aoa }}/noite)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Guia Local -->
+                        <div class="col-12 col-md-6">
+                            <div class="sp-partner-box">
+                                <div>
+                                    <div class="small fw-bold text-uppercase text-muted mb-2" style="font-size: 0.7rem;">
+                                        <i class="fas fa-user-tie text-success me-1"></i>Guia Local (Opcional)
+                                    </div>
+                                    {% if selected_guide %}
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <img src="{{ selected_guide.image }}" alt="{{ selected_guide.title }}" class="sp-partner-img">
+                                        <div>
+                                            <div class="fw-bold small text-dark">{{ selected_guide.title }}</div>
+                                            <div class="small text-success fw-semibold">{{ selected_guide.price_range_aoa }}/dia</div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="py-2 small text-muted">
+                                        <i class="fas fa-walking me-1"></i> Viajar de forma independente (sem guia)
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <form method="post" action="{% url 'routes:plan_add' %}" class="mt-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="item_type" value="guide">
+                                    <input type="hidden" name="province" value="{{ province }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <select name="item_id" class="form-select form-select-sm" aria-label="Escolher guia" onchange="this.form.submit()">
+                                        <option value="none" {% if not selected_guide %}selected{% endif %}>— Viajar sem guia —</option>
+                                        {% for g in available_guides %}
+                                        <option value="{{ g.pk }}" {% if selected_guide and selected_guide.id == g.pk %}selected{% endif %}>
+                                            {{ g.nome }} ({{ g.formatted_base_price_aoa }}/dia)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Roteiro Dia a Dia -->
+                <div class="sp-card mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="sp-step-badge">2</span>
+                            <div>
+                                <h2 class="h6 fw-bold mb-0">O Seu Roteiro Dia a Dia</h2>
+                                <small class="text-muted">{{ num_days }} dia{{ num_days|pluralize:"s" }} · Percurso total estimado: {{ total_distance_km }} km</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-success rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#addStopsCollapse" aria-expanded="false">
+                                <i class="fas fa-plus me-1"></i> Adicionar Locais
+                            </button>
+                            {% if plan_items_count > 0 %}
+                            <form method="post" action="{% url 'routes:plan_clear' %}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-link text-muted text-decoration-none p-0" title="Voltar ao roteiro sugerido">
+                                    <i class="fas fa-undo-alt me-1"></i>Repor
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Gaveta Visual para Adicionar Locais ou Actividades com 1 Clique -->
+                    <div class="collapse mb-4" id="addStopsCollapse">
+                        <div class="p-3 rounded-4 border" style="background: #FAF8F5;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong class="small text-dark">Escolha locais ou actividades para incluir no roteiro:</strong>
+                                <button type="button" class="btn-close small" data-bs-toggle="collapse" data-bs-target="#addStopsCollapse" aria-label="Fechar"></button>
+                            </div>
+                            <div class="row g-2">
+                                {% for d in available_destinations %}
+                                <div class="col-12 col-md-6">
+                                    <div class="sp-catalog-item">
+                                        <img src="{{ d.display_image }}" alt="{{ d.name }}" class="sp-catalog-img">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-bold small text-truncate">{{ d.name }}</div>
+                                            <div class="text-muted" style="font-size: 0.73rem;">{{ d.formatted_fee_range_aoa }}</div>
+                                        </div>
+                                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="item_type" value="destination">
+                                            <input type="hidden" name="item_id" value="{{ d.pk }}">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-2 py-1" style="font-size: 0.74rem;">
+                                                <i class="fas fa-plus"></i> Incluir
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+
+                                {% for e in available_events %}
+                                <div class="col-12 col-md-6">
+                                    <div class="sp-catalog-item">
+                                        <img src="{{ e.display_image }}" alt="{{ e.title }}" class="sp-catalog-img">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-bold small text-truncate">{{ e.title }}</div>
+                                            <div class="text-muted" style="font-size: 0.73rem;">Actividade · {{ e.formatted_price }}</div>
+                                        </div>
+                                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="item_type" value="event">
+                                            <input type="hidden" name="item_id" value="{{ e.pk }}">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1" style="font-size: 0.74rem;">
+                                                <i class="fas fa-plus"></i> Incluir
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if long_distance_warnings %}
+                    <div class="alert alert-warning py-2 px-3 rounded-3 small mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-car-side text-warning"></i>
+                        <span>Algumas paragens ficam a mais de {{ long_dist_threshold }} km entre si. Recomendamos sair cedo pela manhã.</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Lista de Dias -->
+                    {% for day in itinerary_days %}
+                    <div class="sp-day-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <span class="badge bg-dark rounded-pill me-1">Dia {{ day.day_num }}</span>
+                                <strong class="small text-dark">{{ day.date|date:"d/m/Y" }}</strong>
+                            </div>
+                            {% if day.day_distance_km > 0 %}
+                            <span class="small text-muted" style="font-size: 0.78rem;">
+                                <i class="fas fa-route me-1"></i>~{{ day.day_distance_km }} km
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        {% if day.stops %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for stop in day.stops %}
+                            <div class="sp-stop-row">
+                                <span class="sp-stop-num">{{ stop.order }}</span>
+                                <img src="{{ stop.image }}" alt="{{ stop.title }}" class="sp-stop-img">
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                        <strong class="text-dark small">{{ stop.title }}</strong>
+                                        <span class="sp-travel-pill {% if stop.is_long_leg %}warn{% endif %}">
+                                            <i class="fas fa-car"></i> {{ stop.leg_km }} km (~{{ stop.leg_minutes }} min)
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted" style="font-size: 0.78rem;">
+                                        {{ stop.item_type_label }} · <span class="text-success fw-semibold">{{ stop.price_range_aoa }}</span>
+                                    </div>
+                                </div>
+                                <form method="post" action="{% url 'routes:plan_remove' %}" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="key" value="{{ stop.key }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm text-muted p-1" title="Remover este local">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="p-3 rounded-3 border bg-light small text-muted">
+                            Dia livre para descansar no alojamento ou passear pela cidade.
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- 3. Mapa Visual do Roteiro -->
+                {% if has_map %}
+                <div class="sp-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h6 fw-bold mb-0"><i class="fas fa-map-marked-alt text-success me-2"></i>Mapa das Paragens</h2>
+                        <small class="text-muted">Pontos numerados pela ordem de visita</small>
+                    </div>
+                    <div id="plannerMap" style="height: 300px; border-radius: 12px;"></div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ==================== COLUNA DIREITA: ORÇAMENTO & RESERVA SIMPLES ==================== -->
+            <div class="col-12 col-lg-5">
+                <div class="sp-summary-sticky">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="sp-step-badge">3</span>
+                        <div>
+                            <h2 class="h6 fw-bold mb-0">Resumo & Reserva</h2>
+                            <small class="text-muted">{{ num_days }} dia{{ num_days|pluralize:"s" }} em {{ province_label }} para {{ travelers }} pessoa{{ travelers|pluralize:"s" }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Banner de Preço Total & Por Pessoa -->
+                    <div class="sp-total-banner mb-3">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <div>
+                                <div class="small text-white-50">Total Estimado</div>
+                                <div class="fs-3 fw-bold" style="color: #FDBA74;">{{ formatted_grand_total }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-white-50">Por pessoa</div>
+                                <div class="fw-semibold text-white">~{{ formatted_per_person }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'routes:plan_checkout' %}" id="unifiedCheckoutForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="province" value="{{ province }}">
+                        <input type="hidden" name="start_date" value="{{ start_date }}">
+                        <input type="hidden" name="end_date" value="{{ end_date }}">
+                        <input type="hidden" name="travelers" value="{{ travelers }}">
+
+                        <!-- Itens Incluídos (Checklist Limpa) -->
+                        <div class="mb-3">
+                            <div class="small fw-bold text-muted mb-2">O que está incluído (desmarque o que não quiser reservar agora):</div>
+                            <div class="d-flex flex-column gap-2" style="max-height: 240px; overflow-y: auto;">
+                                {% for item in checkout_items %}
+                                <label class="d-flex justify-content-between align-items-center p-2 rounded-3 border bg-light cursor-pointer">
+                                    <span class="d-flex align-items-center gap-2 min-w-0">
+                                        <input class="form-check-input m-0 flex-shrink-0" type="checkbox" name="item_keys" value="{{ item.key }}" checked>
+                                        <span class="small text-truncate">
+                                            <strong class="d-block text-dark text-truncate">{{ item.title }}</strong>
+                                            <span class="text-muted" style="font-size: 0.72rem;">{{ item.item_type_label }} · {{ item.quantity_label }}</span>
+                                        </span>
+                                    </span>
+                                    <strong class="small text-success text-nowrap ms-2">{{ item.formatted_subtotal_aoa }}</strong>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Botão que Abre os Dados de Reserva ou Submete -->
+                        <button class="btn btn-primary-custom w-100 justify-content-center py-2 fw-bold" type="button" id="openBookingFieldsBtn" data-bs-toggle="collapse" data-bs-target="#bookingFieldsCollapse" aria-expanded="false">
+                            <i class="fas fa-check-circle me-2"></i> Reservar Esta Viagem
+                        </button>
+
+                        <!-- Passo Final Retrátil: Dados do Viajante & Pagamento -->
+                        <div class="collapse mt-3" id="bookingFieldsCollapse">
+                            <div class="p-3 rounded-3 border bg-light">
+                                <h3 class="h6 fw-bold mb-2">Os Seus Dados para Confirmação</h3>
+
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold mb-1">Nome Completo *</label>
+                                    <input type="text" name="guest_name" required class="form-control form-control-sm" placeholder="Ex: António Kalupeteka">
+                                </div>
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold mb-1">Telemóvel / WhatsApp *</label>
+                                        <input type="tel" name="guest_phone" required class="form-control form-control-sm" placeholder="+244 923 000 000">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold mb-1">Email *</label>
+                                        <input type="email" name="guest_email" required class="form-control form-control-sm" placeholder="nome@email.ao">
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold mb-1">Como prefere pagar?</label>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="p-2 border rounded-3 bg-white d-block small w-100">
+                                                <input type="radio" name="payment_method" value="mcx_express" checked class="form-check-input me-1">
+                                                <strong>MCX Express</strong>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="p-2 border rounded-3 bg-white d-block small w-100">
+                                                <input type="radio" name="payment_method" value="referencia_mcx" class="form-check-input me-1">
+                                                <strong>Referência</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold mb-1">Observações (opcional)</label>
+                                    <input type="text" name="notes" class="form-control form-control-sm" placeholder="Ex: Chegada prevista às 10h">
+                                </div>
+
+                                <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+                                    <i class="fas fa-lock me-1"></i> Confirmar Reserva ({{ formatted_grand_total }})
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small text-muted" style="font-size: 0.75rem;">
+                        <span><i class="fas fa-shield-alt text-success me-1"></i>Cancelamento flexível</span>
+                        <a href="{{ whatsapp_share_url }}" target="_blank" rel="noopener" class="text-success fw-semibold text-decoration-none">
+                            <i class="fab fa-whatsapp me-1"></i>Guardar no WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const collapseEl = document.getElementById('bookingFieldsCollapse');
+    const openBtn = document.getElementById('openBookingFieldsBtn');
+    if (collapseEl && openBtn) {
+        collapseEl.addEventListener('shown.bs.collapse', function () {
+            openBtn.style.display = 'none';
+            const firstInput = collapseEl.querySelector('input[name="guest_name"]');
+            if (firstInput) firstInput.focus();
+        });
+    }
+});
+</script>
+{% if has_map %}
+{{ map_points|json_script:"planner-map-points" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const el = document.getElementById('planner-map-points');
+    const points = el ? JSON.parse(el.textContent) : [];
+    if (!points.length) return;
+    const map = L.map('plannerMap', {
+        center: [points[0].lat, points[0].lng],
+        zoom: 9,
+        scrollWheelZoom: false,
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18,
+    }).addTo(map);
+    const latlngs = [];
+    points.forEach(function (p, idx) {
+        latlngs.push([p.lat, p.lng]);
+        const icon = L.divIcon({
+            className: '',
+            html: '<div style="width:28px;height:28px;border-radius:50%;background:#D45B16;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);">' + (idx + 1) + '</div>',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+        });
+        L.marker([p.lat, p.lng], { icon: icon })
+            .addTo(map)
+            .bindPopup('<strong>Dia ' + p.day + ': ' + p.name + '</strong><br><small>' + p.leg_km + ' km (~' + p.leg_minutes + ' min)</small>');
+    });
+    if (latlngs.length > 1) {
+        L.polyline(latlngs, { color: '#2D3B2E', weight: 3, dashArray: '6, 8' }).addTo(map);
+        map.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30] });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

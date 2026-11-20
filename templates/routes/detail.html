@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ route.name }}{% endblock %}
+{% block meta_description %}{{ route.short_description }}{% endblock %}
+{% block extra_css %}
+{% if has_map %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endif %}
+<link rel="stylesheet" href="{% static 'css/routes.css' %}">
+{% endblock %}
+{% block content %}
+<div class="routes-page">
+<section class="route-detail-hero" aria-label="{{ route.name }}">
+    {% if route.display_image %}
+    <img src="{{ route.display_image }}"
+         alt="{{ route.name }}"
+         class="route-detail-hero-img">
+    {% else %}
+    <div class="route-detail-hero-img" style="background: linear-gradient(135deg, #0A2218 0%, #2D6A4F 100%);"></div>
+    {% endif %}
+    <div class="route-detail-hero-overlay" aria-hidden="true"></div>
+    <div class="route-detail-hero-content">
+        <div class="container">
+            <nav aria-label="Navegação">
+                <ol class="route-detail-breadcrumb">
+                    <li><a href="{% url 'core:home' %}">Início</a></li>
+                    <li class="sep"><i class="fas fa-chevron-right"></i></li>
+                    <li><a href="{% url 'routes:list' %}">Rotas</a></li>
+                    <li class="sep"><i class="fas fa-chevron-right"></i></li>
+                    <li class="current">{{ route.name }}</li>
+                </ol>
+            </nav>
+            <h1 class="route-detail-title">{{ route.name }}</h1>
+            <div class="route-detail-pills">
+                <span class="pill">
+                    <i class="fas fa-calendar-alt"></i>
+                    {{ route.duration_days }} dia{{ route.duration_days|pluralize:"s" }}
+                </span>
+                <span class="pill">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ route.destinations_count }} destino{{ route.destinations_count|pluralize:"s" }}
+                </span>
+                <span class="pill">
+                    <i class="fas fa-signal"></i>
+                    {{ route.get_difficulty_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="route-body">
+    <div class="container">
+        <div class="row g-4 g-lg-5">
+            <div class="col-12 col-lg-8">
+                <div class="route-description-box" data-aos="fade-up">
+                    <p>{{ route.description }}</p>
+                </div>
+                {% if days %}
+                <div class="itinerary-section" data-aos="fade-up" data-aos-delay="100">
+                    <h2 class="itinerary-title">Itinerário dia a dia</h2>
+                    {% for day_num, stops in days.items %}
+                    <div class="day-block">
+                        <div class="day-header">
+                            <div class="day-number">{{ day_num }}</div>
+                            <span class="day-label">Dia {{ day_num }}</span>
+                        </div>
+                        <ul class="stop-list">
+                            {% for stop in stops %}
+                            <li class="stop-item">
+                                <div class="stop-card">
+                                    {% if stop.destination.image %}
+                                    <img src="{{ stop.destination.image.url }}"
+                                         alt="{{ stop.destination.name }}"
+                                         class="stop-card-thumb"
+                                         loading="lazy">
+                                    {% else %}
+                                    <div class="stop-card-thumb-fallback">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="stop-card-info">
+                                        <div class="stop-card-name">
+                                            <a href="{% url 'destinations:detail' stop.destination.slug %}">
+                                                {{ stop.destination.name }}
+                                            </a>
+                                        </div>
+                                        <div class="stop-card-meta">
+                                            <span>
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                {{ stop.destination.get_province_display }}
+                                            </span>
+                                            <span>
+                                                <i class="fas fa-clock"></i>
+                                                {{ stop.duration_hours }}h
+                                            </span>
+                                            {% if stop.destination.category %}
+                                            <span>{{ stop.destination.category.name }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if stop.notes %}
+                                        <div class="stop-notes">{{ stop.notes }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if has_map %}
+                <div class="route-map-section" data-aos="fade-up">
+                    <h2 class="route-map-title">Mapa do percurso</h2>
+                    <div id="routeMap" role="region" aria-label="Mapa interactivo da rota"></div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-12 col-lg-4">
+                <aside class="route-sidebar-card">
+                    <div class="sidebar-card-header">
+                        <h3>Resumo da rota</h3>
+                    </div>
+                    <div class="sidebar-stats">
+                        <div class="sidebar-stat">
+                            <div class="sidebar-stat-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="sidebar-stat-info">
+                                <div class="sidebar-stat-value">{{ route.duration_days }} dia{{ route.duration_days|pluralize:"s" }}</div>
+                                <div class="sidebar-stat-label">Duração total</div>
+                            </div>
+                        </div>
+                        <div class="sidebar-stat">
+                            <div class="sidebar-stat-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="sidebar-stat-info">
+                                <div class="sidebar-stat-value">{{ route.destinations_count }} destino{{ route.destinations_count|pluralize:"s" }}</div>
+                                <div class="sidebar-stat-label">Paragens no percurso</div>
+                            </div>
+                        </div>
+                        <div class="sidebar-stat">
+                            <div class="sidebar-stat-icon">
+                                <i class="fas fa-signal"></i>
+                            </div>
+                            <div class="sidebar-stat-info">
+                                <div class="sidebar-stat-value">
+                                    <span class="difficulty-label {{ route.difficulty }}">
+                                        {{ route.get_difficulty_display }}
+                                    </span>
+                                </div>
+                                <div class="sidebar-stat-label">Nível de dificuldade</div>
+                            </div>
+                        </div>
+                        {% if days %}
+                        <div class="sidebar-stat">
+                            <div class="sidebar-stat-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="sidebar-stat-info">
+                                <div class="sidebar-stat-value">{{ days|length }} etapa{{ days|length|pluralize:"s" }}</div>
+                                <div class="sidebar-stat-label">Dias com actividades</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="sidebar-divider"></div>
+                    <div class="sidebar-actions">
+                        <a href="{% url 'destinations:list' %}" class="btn-sidebar-primary">
+                            <i class="fas fa-compass"></i>
+                            Explorar destinos
+                        </a>
+                        <a href="{% url 'routes:list' %}" class="btn-sidebar-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Todas as rotas
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% if has_map %}
+{{ map_points|json_script:"route-map-points" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    const pointsEl = document.getElementById('route-map-points');
+    const points = pointsEl ? JSON.parse(pointsEl.textContent) : [];
+    if (!points.length) return;
+    const center = [points[0].lat, points[0].lng];
+    const map = L.map('routeMap', {
+        center: center,
+        zoom: 7,
+        scrollWheelZoom: false,
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18,
+    }).addTo(map);
+    const latlngs = [];
+    function isSafeImageUrl(url) {
+        if (typeof url !== 'string' || !url) return false;
+        return url.startsWith('/') || url.startsWith('https://') || url.startsWith('http://');
+    }
+    points.forEach(function (p, i) {
+        latlngs.push([p.lat, p.lng]);
+        const icon = L.divIcon({
+            className: '',
+            html: `<div style="
+                width: 32px; height: 32px; border-radius: 50%;
+                background: #0A2218; color: #fff;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 12px; font-weight: 600;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 8px rgba(10,34,24,0.35);
+                font-family: 'DM Sans', sans-serif;
+            ">${Number(i) + 1}</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+        });
+        const popupEl = document.createElement('div');
+        popupEl.style.cssText = "font-family: 'DM Sans', sans-serif; min-width: 180px;";
+        if (isSafeImageUrl(p.image)) {
+            const img = document.createElement('img');
+            img.src = p.image;
+            img.alt = p.name || '';
+            img.loading = 'lazy';
+            img.style.cssText = 'width:100%; height:80px; object-fit:cover; border-radius:4px; margin-bottom:8px;';
+            popupEl.appendChild(img);
+        }
+        const dayDiv = document.createElement('div');
+        dayDiv.style.cssText = 'font-size: 0.6rem; color: #8A8A82; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;';
+        dayDiv.textContent = 'Dia ' + Number(p.day || 1);
+        popupEl.appendChild(dayDiv);
+
+        const nameDiv = document.createElement('div');
+        nameDiv.style.cssText = 'font-size: 0.9rem; font-weight: 600; color: #1A1A18; margin-bottom: 3px;';
+        nameDiv.textContent = p.name || '';
+        popupEl.appendChild(nameDiv);
+
+        const provDiv = document.createElement('div');
+        provDiv.style.cssText = 'font-size: 0.75rem; color: #4A4A42;';
+        provDiv.textContent = p.province || '';
+        popupEl.appendChild(provDiv);
+
+        L.marker([p.lat, p.lng], { icon })
+            .addTo(map)
+            .bindPopup(popupEl, { maxWidth: 220 });
+    });
+    if (latlngs.length > 1) {
+        L.polyline(latlngs, {
+            color: '#2D6A4F',
+            weight: 2.5,
+            opacity: 0.55,
+            dashArray: '6, 8',
+        }).addTo(map);
+    }
+    if (latlngs.length > 0) {
+        map.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30] });
+    }
+})();
+</script>
+{% endif %}
+{% endblock %}

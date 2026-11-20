@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if is_dict %}{{ event.title }}{% else %}{{ event.title }}{% endif %} — Tours & Experiências{% endblock %}
+{% block meta_description %}{% if is_dict %}{{ event.subtitle|default:event.description|truncatechars:160 }}{% else %}{{ event.subtitle|default:event.description|truncatechars:160 }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+{% if has_map %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endif %}
+<link rel="stylesheet" href="{% static 'css/events.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="events-page">
+
+    <!-- Hero da Tour / Experiência -->
+    <section class="event-detail-hero"
+             style="background-image: url('{% if is_dict %}{{ event.display_image }}{% else %}{{ event.display_image }}{% endif %}');">
+        <div class="event-detail-overlay"></div>
+        <div class="container position-relative">
+            <nav aria-label="Navegação" class="mb-3">
+                <ol class="d-flex align-items-center gap-2 list-unstyled text-white-50 small mb-0 flex-wrap">
+                    <li><a href="{% url 'core:home' %}" class="text-white-50 text-decoration-none">Início</a></li>
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li><a href="{% url 'events:list' %}" class="text-white-50 text-decoration-none">Tours & Eventos</a></li>
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li class="text-white fw-bold">{{ event.title }}</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="event-hero-badge">
+                    {% if is_dict %}{{ event.category_label }}{% else %}{{ event.get_category_display }}{% endif %}
+                </span>
+                {% if not is_dict %}
+                <span class="badge bg-dark border border-light border-opacity-25 rounded-pill px-3 py-1">
+                    {{ event.get_activity_type_display }}
+                </span>
+                {% endif %}
+            </div>
+
+            <h1 class="display-5 fw-bold text-white mb-2">{{ event.title }}</h1>
+            <p class="text-white-50 mb-0">
+                <i class="fas fa-map-marker-alt text-warning me-1" aria-hidden="true"></i>
+                {% if is_dict %}{{ event.location_venue }}, {{ event.province_label }}{% else %}{{ event.location_venue }}, {{ event.get_province_display }}{% endif %}
+                · <i class="fas fa-calendar-alt text-warning ms-2 me-1" aria-hidden="true"></i>
+                {{ event.start_date|date:"d/m/Y" }}
+                {% if not is_dict and event.duration %}
+                · <i class="fas fa-clock text-warning ms-2 me-1" aria-hidden="true"></i> {{ event.duration }}
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    <div class="container py-5">
+        <div class="row g-4 g-lg-5">
+
+            <!-- Coluna Principal: Experiência, Contexto, Itinerário, Galeria, Vídeo, Mapa -->
+            <div class="col-12 col-lg-7">
+
+                <!-- 1. Descrição & Contexto Histórico, Cultural ou Natural -->
+                <div class="order-surface-card mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                        <h2 class="h4 fw-bold mb-0">Sobre esta Tour / Experiência</h2>
+                        {% if not is_dict %}
+                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="event">
+                            <input type="hidden" name="item_id" value="{{ event.pk }}">
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold">
+                                <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> Incluir no Planeador
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+
+                    {% if not is_dict and event.subtitle %}
+                    <p class="lead fs-6 fw-semibold text-dark mb-3">{{ event.subtitle }}</p>
+                    {% endif %}
+
+                    <div class="text-muted leading-relaxed mb-4">
+                        {% if is_dict %}{{ event.description }}{% else %}{{ event.description|linebreaks }}{% endif %}
+                    </div>
+
+                    {% if not is_dict and event.historical_cultural_context %}
+                    <div class="order-sub-card mb-4" style="border-left: 4px solid var(--color-accent);">
+                        <h3 class="h6 fw-bold mb-2">
+                            <i class="fas fa-landmark me-2" style="color: var(--color-accent);" aria-hidden="true"></i>
+                            Contexto Histórico, Cultural e Natural
+                        </h3>
+                        <p class="small text-muted mb-0">{{ event.historical_cultural_context }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Informações Práticas Rápidas -->
+                    <h3 class="h6 fw-bold text-uppercase text-muted mb-3">Informações Práticas</h3>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <div class="order-sub-card h-100">
+                                <i class="fas fa-calendar-day text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Datas & Horário</div>
+                                <strong class="d-block small">
+                                    {{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} a {{ event.end_date|date:"d/m/Y" }}{% endif %}
+                                </strong>
+                                <small class="text-muted">{{ event.time_schedule|default:"08:00 - 17:00" }}</small>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="order-sub-card h-100">
+                                <i class="fas fa-hourglass-half text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Duração & Capacidade</div>
+                                <strong class="d-block small">{{ event.duration|default:"1 Dia" }}</strong>
+                                <small class="text-muted">Grupo: {% if not is_dict %}{{ event.min_participants }} a {{ event.max_participants }}{% else %}até 20{% endif %} participantes</small>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="order-sub-card h-100">
+                                <i class="fas fa-map-pin text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Ponto de Encontro</div>
+                                <strong class="d-block small">{{ event.location_venue }}</strong>
+                                {% if not is_dict and event.destination %}
+                                <a href="{% url 'destinations:detail' event.destination.slug %}" class="small text-decoration-none" style="color: var(--color-accent);">
+                                    <i class="fas fa-external-link-alt me-1" aria-hidden="true"></i>Destino: {{ event.destination.name }}
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="order-sub-card h-100">
+                                <i class="fas fa-user-tie text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Organização & Guia</div>
+                                <strong class="d-block small">{{ event.organizer_name }}</strong>
+                                {% if not is_dict and event.guide %}
+                                <a href="{% url 'guides:detail' event.guide.slug %}" class="small text-decoration-none" style="color: var(--color-accent);">
+                                    Guia: {{ event.guide.nome }}
+                                </a>
+                                {% elif not is_dict and event.partners %}
+                                <small class="text-muted">{{ event.partners }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itinerário Detalhado da Tour -->
+                    {% if itinerary_lines %}
+                    <div class="mb-4">
+                        <h3 class="h6 fw-bold text-uppercase text-muted mb-3">
+                            <i class="fas fa-route text-primary me-2" aria-hidden="true"></i>Itinerário & Programa da Experiência
+                        </h3>
+                        <div class="d-flex flex-column gap-2 ps-2" style="border-left: 3px solid var(--color-primary);">
+                            {% for step in itinerary_lines %}
+                            <div class="order-sub-card py-2 px-3">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="badge rounded-pill" style="background: var(--color-accent);">{{ forloop.counter }}</span>
+                                    <span class="small">{{ step }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Serviços Incluídos -->
+                    {% if included_services %}
+                    <div class="mb-4">
+                        <h3 class="h6 fw-bold text-uppercase text-muted mb-2">O Que Está Incluído</h3>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for srv in included_services %}
+                            <span class="badge bg-light text-dark border py-2 px-3" style="font-size:0.8rem; font-weight:500;">
+                                <i class="fas fa-check-circle text-success me-1" aria-hidden="true"></i> {{ srv }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Condições de Participação -->
+                    {% if not is_dict and event.participation_conditions %}
+                    <div class="border-top pt-3 mb-3">
+                        <h3 class="h6 fw-bold text-uppercase text-muted mb-2">Condições de Participação & Recomendações</h3>
+                        <p class="small text-muted mb-2">{{ event.participation_conditions }}</p>
+                        {% if event.cancellation_policy %}
+                        <div class="small text-muted">
+                            <i class="fas fa-undo-alt text-primary me-1" aria-hidden="true"></i>
+                            <strong>Cancelamento:</strong> {{ event.cancellation_policy }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 2. Galeria de Fotografias & Vídeo Explicativo -->
+                {% if gallery_images or event.video_url %}
+                <div class="order-surface-card mb-4">
+                    <h2 class="h5 fw-bold mb-3"><i class="fas fa-photo-video text-primary me-2" aria-hidden="true"></i>Galeria & Vídeo da Experiência</h2>
+                    {% if gallery_images %}
+                    <div class="row g-2 mb-3">
+                        {% for img_url in gallery_images %}
+                        <div class="col-6 col-md-4">
+                            <img src="{{ img_url }}" alt="{{ event.title }} — Foto {{ forloop.counter }}" class="rounded-3 w-100" style="height: 150px; object-fit: cover;" loading="lazy">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if not is_dict and event.video_url %}
+                    <div class="order-sub-card d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <strong class="small d-block"><i class="fas fa-play-circle text-danger me-1" aria-hidden="true"></i>Vídeo Explicativo do Destino e da Tour</strong>
+                            <small class="text-muted">Conheça o percurso e o ambiente antes de reservar</small>
+                        </div>
+                        <a href="{{ event.video_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                            Assistir Vídeo <i class="fas fa-external-link-alt ms-1" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- 3. Mapa de Localização -->
+                {% if has_map %}
+                <div class="order-surface-card mb-4">
+                    <h2 class="h5 fw-bold mb-3"><i class="fas fa-map-marked-alt text-primary me-2" aria-hidden="true"></i>Localização & Mapa da Tour</h2>
+                    <div id="eventDetailMap" style="height: 290px; border-radius: 12px;"></div>
+                </div>
+                {% endif %}
+
+                <!-- 4. Artigos Culturais Relacionados -->
+                {% if related_articles %}
+                <div class="order-surface-card mb-4">
+                    <h2 class="h5 fw-bold mb-3"><i class="fas fa-book-open text-primary me-2" aria-hidden="true"></i>Histórias & Cultura Relacionadas</h2>
+                    <div class="d-flex flex-column gap-2">
+                        {% for art in related_articles %}
+                        <a href="{% url 'destinations:article_detail' art.slug %}" class="order-sub-card text-decoration-none d-flex align-items-center gap-3">
+                            <img src="{{ art.display_image }}" alt="{{ art.title }}" style="width: 72px; height: 54px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">
+                            <div>
+                                <span class="badge bg-light text-dark border mb-1" style="font-size:0.65rem;">{{ art.get_topic_display }}</span>
+                                <div class="fw-bold small text-dark">{{ art.title }}</div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Voltar a Tours & Eventos
+                </a>
+            </div>
+
+            <!-- Coluna Lateral: Disponibilidade & Reserva Direta -->
+            <div class="col-12 col-lg-5">
+                <div class="event-action-card">
+                    <div class="d-flex justify-content-between align-items-baseline mb-3 pb-3 border-bottom">
+                        <div>
+                            <span class="text-muted small d-block">Valor por Participante:</span>
+                            <span class="h3 fw-bold text-primary">{{ event.formatted_price }}</span>
+                        </div>
+                        {% if availability_key == 'sold_out' %}
+                        <span class="badge bg-danger"><i class="fas fa-times-circle me-1" aria-hidden="true"></i>Esgotado</span>
+                        {% elif availability_key == 'last_spots' %}
+                        <span class="badge bg-warning text-dark"><i class="fas fa-fire me-1" aria-hidden="true"></i>{{ availability_label }}</span>
+                        {% else %}
+                        <span class="badge bg-light text-success border">
+                            <i class="fas fa-check-circle me-1" aria-hidden="true"></i> {{ availability_label }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if not is_dict and available_spots > 0 %}
+                    <!-- Formulário de Reserva / Inscrição Direta na Tour -->
+                    <form method="post" action="{% url 'events:book' event.slug %}" class="mb-3">
+                        {% csrf_token %}
+                        <h3 class="h6 fw-bold mb-2">Reservar Vaga nesta Experiência</h3>
+
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold mb-1" for="id_part_name">Nome Completo *</label>
+                            <input type="text" id="id_part_name" name="participant_name" required class="form-control form-control-sm" placeholder="Ex: João Chivinga">
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_part_phone">Telemóvel / WhatsApp *</label>
+                                <input type="tel" id="id_part_phone" name="participant_phone" required class="form-control form-control-sm" placeholder="+244 923 000 000">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_part_email">Email *</label>
+                                <input type="email" id="id_part_email" name="participant_email" required class="form-control form-control-sm" placeholder="email@dominio.ao">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_sel_date">Data da Experiência</label>
+                                <input type="date" id="id_sel_date" name="selected_date" value="{{ event.start_date|date:'Y-m-d' }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_part_count">Nº de Participantes *</label>
+                                <input type="number" id="id_part_count" name="participants_count" min="1" max="{{ available_spots }}" value="2" required class="form-control form-control-sm">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold mb-1" for="id_part_notes">Observações (opcional)</label>
+                            <input type="text" id="id_part_notes" name="special_notes" class="form-control form-control-sm" placeholder="Restrições alimentares, ponto de recolha...">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-bold justify-content-center">
+                            <i class="fas fa-calendar-check me-2" aria-hidden="true"></i> Confirmar Reserva de Tour
+                        </button>
+                    </form>
+                    {% elif not is_dict %}
+                    <div class="alert alert-danger small">
+                        Esta experiência atingiu a capacidade máxima de {{ event.max_participants }} participantes. Contacte o organizador para lista de espera.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex flex-column gap-2 pt-2 border-top">
+                        {% if not is_dict %}
+                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="event">
+                            <input type="hidden" name="item_id" value="{{ event.pk }}">
+                            <input type="hidden" name="next" value="{% url 'routes:planner' %}">
+                            <button type="submit" class="btn btn-outline-dark btn-sm w-100 py-2 fw-semibold">
+                                <i class="fas fa-route me-1" aria-hidden="true"></i> Adicionar ao Planeador de Viagem
+                            </button>
+                        </form>
+                        {% endif %}
+                        <a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                           class="btn btn-outline-success btn-sm py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                            <i class="fab fa-whatsapp" aria-hidden="true"></i> Falar com o Organizador no WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_map %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const lat = parseFloat("{{ event.latitude }}".replace(',', '.'));
+    const lng = parseFloat("{{ event.longitude }}".replace(',', '.'));
+    if (isNaN(lat) || isNaN(lng)) return;
+    const map = L.map('eventDetailMap', { center: [lat, lng], zoom: 12, scrollWheelZoom: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18,
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup("<strong>{{ event.title|escapejs }}</strong><br>{{ event.location_venue|escapejs }}").openPopup();
+});
+</script>
+{% endif %}
+{% endblock %}

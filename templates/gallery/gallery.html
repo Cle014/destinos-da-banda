@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Galeria de Fotos e Actividades{% endblock %}
+{% block meta_description %}Explore a galeria fotográfica dos pontos turísticos de Angola e actividades recreativas ao ar livre, culturais e de aventura.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/gallery.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="gallery-page">
+
+    <!-- Header da Galeria -->
+    <section class="gallery-header">
+        <div class="container">
+            <div class="gallery-eyebrow">
+                <i class="fas fa-camera-retro"></i>
+                Imagens & Momentos do Huambo
+            </div>
+            <h1 class="gallery-title">Galeria de Pontos Turísticos & Actividades</h1>
+            <p class="gallery-subtitle">
+                Uma viagem visual pelos cenários deslumbrantes da província do Huambo e pelas experiências e actividades recreativas no Planalto Central.
+            </p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Barra de Filtros -->
+        <div class="gallery-filters-bar">
+            <form method="get" action="{% url 'gallery:index' %}" class="row g-3 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div class="gallery-type-pills">
+                        <a href="{% url 'gallery:index' %}{% if selected_category %}?category={{ selected_category }}{% endif %}"
+                           class="gallery-pill {% if not selected_type %}active{% endif %}">
+                            <i class="fas fa-th-large"></i> Todos ({{ total_count }})
+                        </a>
+                        <a href="?type=spot{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                           class="gallery-pill {% if selected_type == 'spot' %}active{% endif %}">
+                            <i class="fas fa-map-pin"></i> Pontos Turísticos
+                        </a>
+                        <a href="?type=activity{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                           class="gallery-pill {% if selected_type == 'activity' %}active{% endif %}">
+                            <i class="fas fa-hiking"></i> Actividades
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="category" class="gallery-select-filter w-100" onchange="this.form.submit()">
+                        <option value="">Todas as Categorias</option>
+                        {% for cat_val, cat_label in categories %}
+                        <option value="{{ cat_val }}" {% if selected_category == cat_val %}selected{% endif %}>
+                            {{ cat_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="province" class="gallery-select-filter w-100" onchange="this.form.submit()">
+                        <option value="">Todas as Províncias</option>
+                        {% for prov_val, prov_label in provinces %}
+                        <option value="{{ prov_val }}" {% if selected_province == prov_val %}selected{% endif %}>
+                            {{ prov_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% if selected_type %}
+                <input type="hidden" name="type" value="{{ selected_type }}">
+                {% endif %}
+
+                <div class="col-12 col-md-1 text-md-end">
+                    {% if is_filtered %}
+                    <a href="{% url 'gallery:index' %}" class="btn btn-sm btn-outline-secondary" title="Limpar Filtros">
+                        <i class="fas fa-times"></i> Limpar
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Grelha de Fotografias e Actividades -->
+        {% if items %}
+        <div class="gallery-grid">
+            {% for item in items %}
+            <article class="gallery-card"
+                     data-aos="fade-up"
+                     data-bs-toggle="modal"
+                     data-bs-target="#galleryModal"
+                     data-id="{{ item.id }}"
+                     data-slug="{{ item.slug }}"
+                     data-img="{{ item.display_image }}"
+                     data-title="{{ item.title }}"
+                     data-type="{{ item.item_type_label }}"
+                     data-location="{{ item.location_name }}"
+                     data-desc="{{ item.description }}"
+                     data-photographer="{{ item.photographer }}"
+                     data-date="{{ item.activity_date }}">
+                <div class="gallery-card-img-wrap">
+                    <img src="{{ item.display_image }}" alt="{{ item.title }}" class="gallery-card-img" loading="lazy">
+                    <div class="gallery-card-overlay"></div>
+                    <span class="gallery-card-badge {% if item.item_type == 'spot' %}gallery-badge-spot{% else %}gallery-badge-activity{% endif %}">
+                        <i class="{% if item.item_type == 'spot' %}fas fa-landmark{% else %}fas fa-running{% endif %} me-1"></i>
+                        {{ item.item_type_label }}
+                        {% if item.is_demo %}· DEMO{% endif %}
+                    </span>
+                    <div class="gallery-card-zoom-btn" aria-hidden="true">
+                        <i class="fas fa-search-plus"></i>
+                    </div>
+                </div>
+                <div class="gallery-card-body">
+                    <div class="gallery-card-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ item.location_name }}
+                    </div>
+                    <h2 class="gallery-card-title">{{ item.title }}</h2>
+                    <p class="gallery-card-desc">{{ item.description }}</p>
+                    <div class="gallery-card-footer d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tag me-1 text-primary"></i> {{ item.category_label }}</span>
+                        {% if item.id %}
+                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0" onclick="event.stopPropagation();">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="gallery">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill py-1 px-2" style="font-size:0.74rem;">
+                                <i class="fas fa-plus-circle me-1"></i> Adicionar ao plano
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-camera-retro fa-3x text-muted mb-3"></i>
+            <h3>Nenhum registo encontrado</h3>
+            <p class="text-muted">Tente alterar os filtros para encontrar pontos turísticos ou actividades.</p>
+            <a href="{% url 'gallery:index' %}" class="btn btn-primary-custom mt-2">Ver todas as fotos</a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal / Lightbox -->
+<div class="modal fade gallery-modal" id="galleryModal" tabindex="-1" aria-labelledby="galleryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <span class="badge bg-success" id="modalTypeBadge">Ponto Turístico</span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-0 mt-2">
+                <img src="" alt="" id="modalImg" class="gallery-modal-img">
+                <div class="gallery-modal-caption">
+                    <div class="text-warning small mb-1" id="modalLocation">
+                        <i class="fas fa-map-marker-alt me-1"></i> <span></span>
+                    </div>
+                    <h3 class="h4 text-white mb-2" id="galleryModalLabel"></h3>
+                    <p class="text-light mb-3" id="modalDesc"></p>
+                    <form method="post" action="{% url 'routes:plan_add' %}" class="mb-3" id="modalPlanForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_type" value="gallery">
+                        <input type="hidden" name="item_id" id="modalItemId" value="">
+                        <input type="hidden" name="next" value="{% url 'routes:planner' %}">
+                        <button type="submit" class="btn btn-sm btn-warning fw-bold rounded-pill px-3">
+                            <i class="fas fa-route me-1"></i> Adicionar ao plano e reservar jornada
+                        </button>
+                    </form>
+                    <div class="d-flex justify-content-between small text-white-50 border-top border-secondary pt-2">
+                        <span id="modalPhotographer"><i class="fas fa-camera me-1"></i> <span></span></span>
+                        <span id="modalDate"><i class="far fa-calendar-alt me-1"></i> <span></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const galleryModal = document.getElementById('galleryModal');
+    if (!galleryModal) return;
+
+    galleryModal.addEventListener('show.bs.modal', function (event) {
+        const card = event.relatedTarget;
+        if (!card) return;
+
+        const imgUrl = card.getAttribute('data-img');
+        const title = card.getAttribute('data-title');
+        const type = card.getAttribute('data-type');
+        const location = card.getAttribute('data-location');
+        const desc = card.getAttribute('data-desc');
+        const photographer = card.getAttribute('data-photographer');
+        const date = card.getAttribute('data-date');
+        const itemId = card.getAttribute('data-id');
+
+        const modalItemInput = document.getElementById('modalItemId');
+        if (modalItemInput) modalItemInput.value = itemId || '';
+
+        document.getElementById('modalImg').src = imgUrl;
+        document.getElementById('modalImg').alt = title;
+        document.getElementById('galleryModalLabel').textContent = title;
+        document.getElementById('modalTypeBadge').textContent = type;
+        document.getElementById('modalLocation').querySelector('span').textContent = location;
+        document.getElementById('modalDesc').textContent = desc;
+
+        const photoEl = document.getElementById('modalPhotographer').querySelector('span');
+        photoEl.textContent = photographer ? 'Foto: ' + photographer : 'Destinos da Banda';
+
+        const dateEl = document.getElementById('modalDate').querySelector('span');
+        dateEl.textContent = date ? date : 'Angola';
+    });
+});
+</script>
+{% endblock %}

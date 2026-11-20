@@ -1,0 +1,2587 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Centro de Gestão — {{ site_name }}</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+</head>
+<body class="bo-body">
+<div class="bo-shell">
+
+    <!-- ==================== SIDEBAR LATERAL ==================== -->
+    <div class="bo-sidebar-backdrop" id="boSidebarBackdrop" onclick="toggleBoSidebar(false)"></div>
+    <aside class="bo-sidebar" id="boSidebar">
+        <div class="d-flex align-items-center justify-content-between pe-3 border-bottom" style="border-color: var(--bo-sidebar-border) !important;">
+            <a href="{% url 'dashboard:home' %}" class="bo-brand border-0 flex-grow-1">
+                <img src="{% static 'images/logo-icon-light.png' %}" alt="Logo" class="bo-brand-logo">
+                <div>
+                    <span class="bo-brand-title">DESTINOS DA BANDA</span>
+                    <span class="bo-brand-sub">Centro de Gestão</span>
+                </div>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-light d-lg-none" onclick="toggleBoSidebar(false)" aria-label="Fechar menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="bo-nav-scroll">
+            <div class="bo-nav-group-label">Operações & Densidade</div>
+            <ul class="bo-nav-list">
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'overview' %}active{% endif %}" id="overview-tab" data-tab="overview" data-title="Visão Geral & Densidade" type="button">
+                        <span><i class="fas fa-chart-pie"></i> Visão Geral & Densidade</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'bookings' %}active{% endif %}" id="bookings-tab" data-tab="bookings" data-title="Reservas & Jornadas" type="button">
+                        <span><i class="fas fa-calendar-check"></i> Reservas & Jornadas</span>
+                        <span class="bo-nav-count {% if metrics.bookings_pending > 0 %}badge-alert{% endif %}">{{ metrics.bookings_total }}</span>
+                    </button>
+                </li>
+            </ul>
+
+            <div class="bo-nav-group-label">Catálogo Turístico</div>
+            <ul class="bo-nav-list">
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'destinations' %}active{% endif %}" id="destinations-tab" data-tab="destinations" data-title="Destinos & Categorias" type="button">
+                        <span><i class="fas fa-map-marked-alt"></i> Destinos & Categorias</span>
+                        <span class="bo-nav-count">{{ metrics.destinations }}</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'accommodations' %}active{% endif %}" id="accommodations-tab" data-tab="accommodations" data-title="Alojamentos & Tipologias" type="button">
+                        <span><i class="fas fa-hotel"></i> Alojamentos</span>
+                        <span class="bo-nav-count">{{ metrics.accommodations }}</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'routes' %}active{% endif %}" id="routes-tab" data-tab="routes" data-title="Rotas & Roteiros" type="button">
+                        <span><i class="fas fa-route"></i> Rotas & Roteiros</span>
+                        <span class="bo-nav-count">{{ metrics.routes }}</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'events' %}active{% endif %}" id="events-tab" data-tab="events" data-title="Eventos & Tours" type="button">
+                        <span><i class="fas fa-compass"></i> Eventos & Tours</span>
+                        <span class="bo-nav-count">{{ metrics.events }}</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'articles' %}active{% endif %}" id="articles-tab" data-tab="articles" data-title="Blog Cultural" type="button">
+                        <span><i class="fas fa-feather-alt"></i> Blog Cultural</span>
+                        <span class="bo-nav-count">{{ metrics.articles|default:0 }}</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'gallery' %}active{% endif %}" id="gallery-tab" data-tab="gallery" data-title="Galeria Multimédia" type="button">
+                        <span><i class="fas fa-images"></i> Galeria Multimédia</span>
+                        <span class="bo-nav-count">{{ metrics.gallery }}</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="bo-nav-btn {% if active_tab == 'guides' %}active{% endif %}" id="guides-tab" data-tab="guides" data-title="Guias Turísticos" type="button">
+                        <span><i class="fas fa-user-tie"></i> Guias Turísticos</span>
+                        <span class="bo-nav-count">{{ metrics.guides }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="bo-sidebar-footer">
+            <div class="bo-user-box">
+                <div class="bo-user-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+                <div>
+                    <span class="bo-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <span class="bo-user-role">{% if request.user.is_superuser %}Administrador Geral{% else %}Operador{% endif %}</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'core:home' %}" target="_blank" class="btn btn-sm btn-outline-light flex-grow-1">
+                    <i class="fas fa-external-link-alt me-1"></i> Ver Site
+                </a>
+                <form method="post" action="{% url 'dashboard:logout' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger" title="Terminar Sessão">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ==================== ÁREA PRINCIPAL ==================== -->
+    <div class="bo-main">
+
+        <!-- Topbar -->
+        <header class="bo-topbar">
+            <div class="d-flex align-items-center gap-2 gap-md-3">
+                <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" onclick="toggleBoSidebar()" aria-label="Abrir menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="bo-topbar-title" id="boTopbarTitle">Gestão da Plataforma</h1>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 flex-grow-1 flex-md-grow-0 justify-content-end">
+                <div class="bo-search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="search" id="boTableFilter" class="bo-search-input" placeholder="Filtrar tabela actual...">
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="bo-content">
+
+            <!-- Alertas / Mensagens -->
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm mb-2" role="alert">
+                    <i class="fas {% if message.tags == 'success' %}fa-check-circle text-success{% elif message.tags == 'error' %}fa-exclamation-triangle text-danger{% else %}fa-info-circle{% endif %} fs-5"></i>
+                    <div class="flex-grow-1">{{ message }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="tab-content" id="boTabContent">
+
+                <!-- =========================================================
+                     1. VISÃO GERAL
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'overview' %}show active{% endif %}" id="tab-overview" role="tabpanel">
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="bo-kpi-card" onclick="switchToTab('destinations')">
+                                <div>
+                                    <div class="bo-kpi-value">{{ metrics.destinations }}</div>
+                                    <div class="bo-kpi-label">Destinos</div>
+                                    <div class="bo-kpi-sub">{{ metrics.destinations_published }} publicados</div>
+                                </div>
+                                <div class="bo-kpi-icon"><i class="fas fa-map-marked-alt"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="bo-kpi-card" onclick="switchToTab('accommodations')">
+                                <div>
+                                    <div class="bo-kpi-value">{{ metrics.accommodations }}</div>
+                                    <div class="bo-kpi-label">Alojamentos</div>
+                                    <div class="bo-kpi-sub">{{ metrics.accommodations_active }} activos</div>
+                                </div>
+                                <div class="bo-kpi-icon"><i class="fas fa-hotel"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="bo-kpi-card" onclick="switchToTab('routes')">
+                                <div>
+                                    <div class="bo-kpi-value">{{ metrics.routes }}</div>
+                                    <div class="bo-kpi-label">Rotas</div>
+                                    <div class="bo-kpi-sub">Itinerários</div>
+                                </div>
+                                <div class="bo-kpi-icon"><i class="fas fa-route"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="bo-kpi-card" onclick="switchToTab('events')">
+                                <div>
+                                    <div class="bo-kpi-value">{{ metrics.events }}</div>
+                                    <div class="bo-kpi-label">Eventos</div>
+                                    <div class="bo-kpi-sub">Agenda activa</div>
+                                </div>
+                                <div class="bo-kpi-icon"><i class="fas fa-calendar-alt"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="bo-kpi-card" onclick="switchToTab('gallery')">
+                                <div>
+                                    <div class="bo-kpi-value">{{ metrics.gallery }}</div>
+                                    <div class="bo-kpi-label">Galeria</div>
+                                    <div class="bo-kpi-sub">Fotos & Lazer</div>
+                                </div>
+                                <div class="bo-kpi-icon"><i class="fas fa-images"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="bo-kpi-card accent" onclick="switchToTab('guides')">
+                                <div>
+                                    <div class="bo-kpi-value">{{ metrics.guides }}</div>
+                                    <div class="bo-kpi-label">Guias</div>
+                                    <div class="bo-kpi-sub">Certificados</div>
+                                </div>
+                                <div class="bo-kpi-icon"><i class="fas fa-user-tie"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== PAINEL DE DENSIDADE & QUALIDADE (Fase 2.6) ==================== -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="bo-card p-3 border-start border-4 border-success h-100">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small text-uppercase fw-bold">Taxa de Reservas Concluídas</span>
+                                        <div class="h3 fw-bold text-success mb-0">{{ metrics.completion_rate }}%</div>
+                                        <small class="text-muted">{{ metrics.bookings_completed }} concluídas de {{ metrics.bookings_total }} reservas totais</small>
+                                    </div>
+                                    <i class="fas fa-check-double text-success fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="bo-card p-3 border-start border-4 border-primary h-100">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small text-uppercase fw-bold">Jornadas Multi-Parceiro</span>
+                                        <div class="h3 fw-bold text-primary mb-0">{{ metrics.trip_orders_total }}</div>
+                                        <small class="text-muted">{{ metrics.trip_orders_partial }} com falha parcial em recuperação</small>
+                                    </div>
+                                    <i class="fas fa-route text-primary fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="bo-card p-3 border-start border-4 {% if metrics.stale_count > 0 %}border-warning{% else %}border-secondary{% endif %} h-100">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-muted small text-uppercase fw-bold">Fichas Desactualizadas / Incompletas</span>
+                                        <div class="h3 fw-bold {% if metrics.stale_count > 0 %}text-warning{% else %}text-dark{% endif %} mb-0">{{ metrics.stale_count }}</div>
+                                        <small class="text-muted">Critério: >60 dias ou sem GPS/preço em Kz</small>
+                                    </div>
+                                    <i class="fas fa-exclamation-circle text-warning fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <!-- Matriz de Densidade por Província -->
+                        <div class="col-12 col-xl-7">
+                            <div class="bo-card h-100">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title"><i class="fas fa-bullseye me-2 text-success"></i>Painel de Densidade por Província (Limiar da Cunha: ≥{{ metrics.min_threshold }} itens/módulo)</h3>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Província</th>
+                                                <th class="text-center">Destinos</th>
+                                                <th class="text-center">Alojamentos</th>
+                                                <th class="text-center">Guias</th>
+                                                <th class="text-center">Eventos</th>
+                                                <th class="text-center">Total Parceiros</th>
+                                                <th>Estado da Cunha</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p in province_density %}
+                                            <tr>
+                                                <td><strong>{{ p.label }}</strong></td>
+                                                <td class="text-center">
+                                                    <span class="badge {% if p.destinations >= metrics.min_threshold %}bg-success{% else %}bg-secondary{% endif %}">{{ p.destinations }}/{{ metrics.min_threshold }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge {% if p.accommodations >= metrics.min_threshold %}bg-success{% else %}bg-secondary{% endif %}">{{ p.accommodations }}/{{ metrics.min_threshold }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge {% if p.guides >= metrics.min_threshold %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ p.guides }}/{{ metrics.min_threshold }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge {% if p.events >= metrics.min_threshold %}bg-success{% else %}bg-secondary{% endif %}">{{ p.events }}/{{ metrics.min_threshold }}</span>
+                                                </td>
+                                                <td class="text-center"><strong>{{ p.total_partners }}</strong></td>
+                                                <td>
+                                                    {% if p.wedge_active %}
+                                                    <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Cunha Activa ({{ p.ready_modules }}/5 mód.)</span>
+                                                    {% else %}
+                                                    <span class="badge bg-light text-muted border">Em Breve ({{ p.ready_modules }}/5 mód.)</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fichas Desactualizadas ou Incompletas -->
+                        <div class="col-12 col-xl-5">
+                            <div class="bo-card h-100">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title"><i class="fas fa-clock me-2 text-warning"></i>Auditoria de Fichas Desactualizadas ({{ metrics.stale_count }})</h3>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ficha</th>
+                                                <th>Alerta de Qualidade</th>
+                                                <th class="text-end">Rever</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for st in stale_records|slice:":6" %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ st.name }}</strong><br>
+                                                    <small class="text-muted">{{ st.type }} · {{ st.province }}</small>
+                                                </td>
+                                                <td><span class="badge bg-warning-subtle text-dark border">{{ st.reasons }}</span></td>
+                                                <td class="text-end">
+                                                    <a href="{% url 'dashboard:record_edit' st.model_key st.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center py-4 text-success">
+                                                    <i class="fas fa-check-circle me-1"></i> Todas as fichas estão actualizadas, com coordenadas GPS e faixas em Kz!
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Atalhos de Criação Rápida -->
+                    <div class="bo-card p-4 mb-4">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div>
+                                <h2 class="h6 fw-bold mb-1">Acções Rápidas de Gestão</h2>
+                                <p class="text-muted small mb-0">Selecione o módulo para adicionar, editar, destacar ou remover conteúdos da plataforma em tempo real.</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="{% url 'dashboard:home' %}?tab=destinations" class="btn bo-btn-accent" onclick="event.preventDefault(); switchToTab('destinations', true);"><i class="fas fa-plus me-1"></i> Destino</a>
+                                <a href="{% url 'dashboard:home' %}?tab=accommodations" class="btn bo-btn-primary" onclick="event.preventDefault(); switchToTab('accommodations', true);"><i class="fas fa-plus me-1"></i> Alojamento</a>
+                                <a href="{% url 'dashboard:home' %}?tab=routes" class="btn bo-btn-primary" onclick="event.preventDefault(); switchToTab('routes', true);"><i class="fas fa-plus me-1"></i> Rota</a>
+                                <a href="{% url 'dashboard:home' %}?tab=events" class="btn bo-btn-primary" onclick="event.preventDefault(); switchToTab('events', true);"><i class="fas fa-plus me-1"></i> Tour / Evento</a>
+                                <a href="{% url 'dashboard:home' %}?tab=articles" class="btn bo-btn-primary" onclick="event.preventDefault(); switchToTab('articles', true);"><i class="fas fa-plus me-1"></i> Artigo Cultural</a>
+                                <a href="{% url 'dashboard:home' %}?tab=gallery" class="btn bo-btn-primary" onclick="event.preventDefault(); switchToTab('gallery', true);"><i class="fas fa-plus me-1"></i> Foto Galeria</a>
+                                <a href="{% url 'dashboard:home' %}?tab=guides" class="btn bo-btn-primary" onclick="event.preventDefault(); switchToTab('guides', true);"><i class="fas fa-plus me-1"></i> Guia</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Últimas Reservas -->
+                        <div class="col-12 col-xl-7">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title"><i class="fas fa-calendar-check me-2 text-warning"></i>Últimos Pedidos de Reserva ({{ metrics.bookings_total }})</h3>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="switchToTab('bookings')">Gerir Reservas</button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Cliente</th>
+                                                <th>Alojamento</th>
+                                                <th>Total</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for b in recent_bookings|slice:":6" %}
+                                            <tr>
+                                                <td><span class="badge bg-secondary font-monospace">#{{ b.reference_code }}</span></td>
+                                                <td><strong>{{ b.guest_name }}</strong><br><small class="text-muted">{{ b.guest_phone }}</small></td>
+                                                <td>{{ b.accommodation.name }}</td>
+                                                <td><strong>{{ b.total_price_aoa|floatformat:0 }} Kz</strong></td>
+                                                <td>
+                                                    {% if b.status == 'confirmed' %}<span class="badge bg-success">Confirmada</span>
+                                                    {% elif b.status == 'pending' %}<span class="badge bg-warning text-dark">Pendente</span>
+                                                    {% elif b.status == 'cancelled' %}<span class="badge bg-danger">Cancelada</span>
+                                                    {% else %}<span class="badge bg-info text-dark">Concluída</span>{% endif %}
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="5" class="text-center py-4 text-muted">Ainda não existem reservas submetidas pelos visitantes.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Destinos em Destaque -->
+                        <div class="col-12 col-xl-5">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title"><i class="fas fa-map-marked-alt me-2 text-success"></i>Destinos Activos no Portal</h3>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="switchToTab('destinations')">Gerir Todos</button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Destino</th>
+                                                <th>Província</th>
+                                                <th class="text-end">Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for d in destinations|slice:":6" %}
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <img src="{{ d.display_image }}" alt="{{ d.name }}" class="bo-thumb">
+                                                        <div>
+                                                            <strong class="d-block">{{ d.name }}</strong>
+                                                            <small class="text-muted">{{ d.category.name|default:"Sem categoria" }}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ d.get_province_display }}</td>
+                                                <td class="text-end">
+                                                    <a href="{% url 'dashboard:record_edit' 'destination' d.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-pen"></i></a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     2. DESTINOS & CATEGORIAS
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'destinations' %}show active{% endif %}" id="tab-destinations" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <!-- Novo Destino -->
+                            <div class="bo-card bo-form-card p-4 mb-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-plus-circle me-2 text-success"></i>Publicar Novo Destino</h3>
+                                <form method="post" action="{% url 'dashboard:destination_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Nome do Destino *</label>
+                                        {{ destination_form.name }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Categoria</label>
+                                            {{ destination_form.category }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Província *</label>
+                                            {{ destination_form.province }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Localização / Município</label>
+                                        {{ destination_form.address }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Resumo Curto *</label>
+                                        {{ destination_form.short_description }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ficheiro de Imagem (Upload)</label>
+                                        {{ destination_form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou Link Externo da Imagem</label>
+                                        {{ destination_form.image_url }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Melhor Época</label>
+                                            {{ destination_form.best_time_to_visit }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Entrada</label>
+                                            {{ destination_form.entry_fee }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Latitude</label>
+                                            {{ destination_form.latitude }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Longitude</label>
+                                            {{ destination_form.longitude }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Descrição Completa *</label>
+                                        {{ destination_form.description }}
+                                    </div>
+                                    <div class="p-2 rounded bg-light border mb-2">
+                                        <div class="small fw-bold text-success mb-2"><i class="fas fa-seedling me-1"></i>Agroturismo & Experiência de Visita</div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <label class="form-label">Duração da Visita</label>
+                                                {{ destination_form.visit_duration }}
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Capacidade Diária</label>
+                                                {{ destination_form.max_visitors }}
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <label class="form-label">Preço Base (Kz)</label>
+                                                {{ destination_form.entry_fee_min_aoa }}
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Anfitrião / Fazenda</label>
+                                                {{ destination_form.host_name }}
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">Actividades Disponíveis (1 por linha)</label>
+                                            {{ destination_form.activities_available }}
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">Condições de Visita</label>
+                                            {{ destination_form.visit_conditions }}
+                                        </div>
+                                        <div class="mb-1">
+                                            <label class="form-label">Vídeo Explicativo (URL)</label>
+                                            {{ destination_form.video_url }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-3 align-items-center">
+                                        <div class="col-6">
+                                            <label class="form-label">Estado</label>
+                                            {{ destination_form.status }}
+                                        </div>
+                                        <div class="col-6 pt-3">
+                                            <div class="form-check form-switch">
+                                                {{ destination_form.is_featured }}
+                                                <label class="form-check-label small fw-semibold" for="{{ destination_form.is_featured.id_for_label }}">Em Destaque</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-plus me-1"></i> Guardar Destino
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Categorias -->
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-tags me-2"></i>Categorias Turísticas ({{ categories.count }})</h3>
+                                <form method="post" action="{% url 'dashboard:category_add' %}" class="mb-3">
+                                    {% csrf_token %}
+                                    <div class="row g-2">
+                                        <div class="col-7">{{ category_form.name }}</div>
+                                        <div class="col-5">{{ category_form.icon }}</div>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm bo-btn-primary w-100 mt-2">+ Adicionar Categoria</button>
+                                </form>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for cat in categories %}
+                                    <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2 py-2 px-2">
+                                        <i class="{{ cat.icon }}"></i> {{ cat.name }}
+                                        <a href="{% url 'dashboard:record_edit' 'category' cat.pk %}" class="text-primary" title="Editar categoria {{ cat.name }}">
+                                            <i class="fas fa-pen" style="font-size: 0.65rem;"></i>
+                                        </a>
+                                        <form method="post" action="{% url 'dashboard:category_delete' cat.pk %}" class="d-inline m-0" onsubmit="return confirm('Eliminar categoria {{ cat.name }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-close" style="font-size: 0.55rem;" aria-label="Remover"></button>
+                                        </form>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Destinos -->
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Destinos Turísticos ({{ destinations.count }})</h3>
+                                    <a href="{% url 'destinations:list' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Página Pública
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Foto</th>
+                                                <th>Destino</th>
+                                                <th>Categoria / Província</th>
+                                                <th class="text-center">Destaque</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for d in destinations %}
+                                            <tr>
+                                                <td><img src="{{ d.display_image }}" alt="{{ d.name }}" class="bo-thumb"></td>
+                                                <td>
+                                                    <strong class="d-block">{{ d.name }}</strong>
+                                                    <small class="text-muted">{{ d.short_description|truncatechars:60 }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border">{{ d.category.name|default:"Geral" }}</span><br>
+                                                    <small class="text-muted">{{ d.get_province_display }}</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <form method="post" action="{% url 'dashboard:destination_toggle' d.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="featured">
+                                                        <button type="submit" class="bo-star-btn {% if d.is_featured %}active{% endif %}" title="Alternar Destaque">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'dashboard:destination_toggle' d.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="status">
+                                                        <button type="submit" class="bo-status-btn {% if d.status == 'published' %}published{% else %}draft{% endif %}" title="Clique para alternar Publicado/Rascunho">
+                                                            {{ d.get_status_display }}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'destination' d.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <a href="{% url 'destinations:detail' d.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver no Site">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:destination_delete' d.pk %}" onsubmit="return confirm('Eliminar o destino {{ d.name }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum destino registado.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     3. ALOJAMENTOS
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'accommodations' %}show active{% endif %}" id="tab-accommodations" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-hotel me-2 text-success"></i>Cadastrar Alojamento</h3>
+                                <form method="post" action="{% url 'dashboard:accommodation_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Nome do Estabelecimento *</label>
+                                        {{ accommodation_form.name }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Tipo *</label>
+                                            {{ accommodation_form.accommodation_type }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Província *</label>
+                                            {{ accommodation_form.province }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Cidade *</label>
+                                            {{ accommodation_form.city }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Endereço</label>
+                                            {{ accommodation_form.address }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Preço/Noite (AOA) *</label>
+                                            {{ accommodation_form.price_per_night_aoa }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Preço/Noite (USD)</label>
+                                            {{ accommodation_form.price_per_night_usd }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Latitude (GPS)</label>
+                                            {{ accommodation_form.latitude }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Longitude (GPS)</label>
+                                            {{ accommodation_form.longitude }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-4">
+                                            <label class="form-label">Hóspedes</label>
+                                            {{ accommodation_form.max_guests }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Quartos</label>
+                                            {{ accommodation_form.bedrooms }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">WC</label>
+                                            {{ accommodation_form.bathrooms }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Comodidades (separadas por vírgula)</label>
+                                        {{ accommodation_form.amenities }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Foto Principal (Upload)</label>
+                                        {{ accommodation_form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou URL da Imagem</label>
+                                        {{ accommodation_form.image_url }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Telefone</label>
+                                            {{ accommodation_form.contact_phone }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">WhatsApp</label>
+                                            {{ accommodation_form.contact_whatsapp }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Resumo Curto *</label>
+                                        {{ accommodation_form.short_description }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Descrição Completa *</label>
+                                        {{ accommodation_form.description }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-12">
+                                            <label class="form-label">Unidades Disponíveis (Curta Duração / Alojamento Inteiro)</label>
+                                            {{ accommodation_form.total_units }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Regras da Casa / Propriedade</label>
+                                        {{ accommodation_form.house_rules }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Condições de Reserva e Cancelamento</label>
+                                        {{ accommodation_form.booking_conditions }}
+                                    </div>
+                                    <div class="d-flex gap-3 mb-3">
+                                        <div class="form-check form-switch">
+                                            {{ accommodation_form.is_active }}
+                                            <label class="form-check-label small fw-semibold" for="{{ accommodation_form.is_active.id_for_label }}">Activo</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            {{ accommodation_form.is_featured }}
+                                            <label class="form-check-label small fw-semibold" for="{{ accommodation_form.is_featured.id_for_label }}">Destaque</label>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-plus me-1"></i> Guardar Alojamento
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Configurar Tipologia de Quarto / Suite (Hotelaria) -->
+                            <div class="bo-card bo-form-card p-4 mt-4">
+                                <h3 class="h6 fw-bold mb-2"><i class="fas fa-bed me-2 text-primary"></i>Adicionar Tipologia de Quarto / Suite</h3>
+                                <p class="text-muted small mb-3">Configure inventário por tipologia (Single, Standard, Duplo, Twin, Superior, Suite) para hotéis, lodges e resorts.</p>
+                                <form method="post" action="{% url 'dashboard:room_type_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Estabelecimento Hoteleiro *</label>
+                                        {{ room_type_form.accommodation }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Categoria *</label>
+                                            {{ room_type_form.category }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Nome da Tipologia *</label>
+                                            {{ room_type_form.name }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-4">
+                                            <label class="form-label">Capacidade</label>
+                                            {{ room_type_form.capacity_guests }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Nº Camas</label>
+                                            {{ room_type_form.beds_count }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Unidades *</label>
+                                            {{ room_type_form.total_units }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Config. Camas</label>
+                                            {{ room_type_form.bed_configuration }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Preço/Noite (AOA) *</label>
+                                            {{ room_type_form.price_per_night_aoa }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Comodidades do Quarto</label>
+                                        {{ room_type_form.amenities }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">URL da Fotografia</label>
+                                        {{ room_type_form.image_url }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Descrição da Tipologia</label>
+                                        {{ room_type_form.description }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Condições de Reserva</label>
+                                        {{ room_type_form.booking_conditions }}
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-primary w-100">
+                                        <i class="fas fa-plus me-1"></i> Adicionar Tipologia & Inventário
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Alojamentos Registados ({{ accommodations.count }})</h3>
+                                    <a href="{% url 'accommodations:list' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Catálogo Público
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Foto</th>
+                                                <th>Alojamento</th>
+                                                <th>Cidade / Província</th>
+                                                <th>Preço / Noite</th>
+                                                <th class="text-center">Destaque</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for acc in accommodations %}
+                                            <tr>
+                                                <td><img src="{{ acc.display_image }}" alt="{{ acc.name }}" class="bo-thumb"></td>
+                                                <td>
+                                                    <strong class="d-block">{{ acc.name }}</strong>
+                                                    <span class="badge bg-light text-dark border">{{ acc.get_accommodation_type_display }}</span>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ acc.city }}</strong><br>
+                                                    <small class="text-muted">{{ acc.get_province_display }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong style="color: var(--bo-accent);">{{ acc.price_per_night_aoa|floatformat:0 }} Kz</strong>
+                                                    {% if acc.price_per_night_usd %}<br><small class="text-muted">${{ acc.price_per_night_usd }}</small>{% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    <form method="post" action="{% url 'dashboard:accommodation_toggle' acc.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="featured">
+                                                        <button type="submit" class="bo-star-btn {% if acc.is_featured %}active{% endif %}" title="Alternar Destaque">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'dashboard:accommodation_toggle' acc.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="active">
+                                                        <button type="submit" class="bo-status-btn {% if acc.is_active %}published{% else %}draft{% endif %}">
+                                                            {% if acc.is_active %}Activo{% else %}Inactivo{% endif %}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'accommodation' acc.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <a href="{% url 'accommodations:detail' acc.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver no Site">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:accommodation_delete' acc.pk %}" onsubmit="return confirm('Eliminar o alojamento {{ acc.name }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="7" class="text-center py-4 text-muted">Nenhum alojamento registado.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Tabela de Inventário por Tipologia Hoteleira -->
+                            <div class="bo-card mt-4">
+                                <div class="bo-card-header">
+                                    <div>
+                                        <h3 class="bo-card-title"><i class="fas fa-layer-group me-2 text-primary"></i>Inventário de Tipologias de Quartos & Suites ({{ room_types.count }})</h3>
+                                        <small class="text-muted">A disponibilidade por período é calculada noite a noite descontando reservas confirmadas/pendentes sobre o total de unidades físicas.</small>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Estabelecimento</th>
+                                                <th>Tipologia</th>
+                                                <th>Capacidade / Camas</th>
+                                                <th>Preço / Noite</th>
+                                                <th class="text-center">Unidades Físicas</th>
+                                                <th class="text-center">Estado</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for rt in room_types %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ rt.accommodation.name }}</strong><br>
+                                                    <small class="text-muted">{{ rt.accommodation.city }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ rt.name }}</strong><br>
+                                                    <span class="badge bg-light text-dark border">{{ rt.get_category_display }}</span>
+                                                </td>
+                                                <td>
+                                                    {{ rt.capacity_guests }} pax &bull; {{ rt.beds_count }} cama(s)<br>
+                                                    <small class="text-muted">{{ rt.bed_configuration }}</small>
+                                                </td>
+                                                <td><strong style="color: var(--bo-accent);">{{ rt.price_per_night_aoa|floatformat:0 }} Kz</strong></td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ rt.total_units }} unid.</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <form method="post" action="{% url 'dashboard:room_type_toggle' rt.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="bo-status-btn {% if rt.is_active %}published{% else %}draft{% endif %}">
+                                                            {% if rt.is_active %}Activa{% else %}Inactiva{% endif %}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'room_type' rt.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Tipologia">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:room_type_delete' rt.pk %}" onsubmit="return confirm('Eliminar tipologia {{ rt.name }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="7" class="text-center py-4 text-muted">Nenhuma tipologia configurada.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     4. RESERVAS
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'bookings' %}show active{% endif %}" id="tab-bookings" role="tabpanel">
+                    <!-- 1. Reservas de Alojamento -->
+                    <div class="bo-card">
+                        <div class="bo-card-header">
+                            <div>
+                                <h3 class="bo-card-title"><i class="fas fa-hotel me-2 text-warning"></i>Gestão de Pedidos de Reserva ({{ recent_bookings.count }})</h3>
+                                <small class="text-muted">Crie, edite, confirme ou elimine reservas de alojamento e contacte os hóspedes via WhatsApp</small>
+                            </div>
+                            <button class="btn btn-sm bo-btn-accent" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBookingForm" aria-expanded="false">
+                                <i class="fas fa-plus me-1"></i> Nova Reserva
+                            </button>
+                        </div>
+                        <div class="collapse border-bottom bg-light p-3" id="collapseBookingForm">
+                            <form method="post" action="{% url 'dashboard:booking_add' %}">
+                                {% csrf_token %}
+                                <div class="row g-2">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Alojamento *</label>
+                                        {{ booking_form.accommodation }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Tipologia de Quarto</label>
+                                        {{ booking_form.room_type }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Unidades</label>
+                                        {{ booking_form.units_reserved }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Hóspedes</label>
+                                        {{ booking_form.guests_count }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Nome do Hóspede *</label>
+                                        {{ booking_form.guest_name }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Email *</label>
+                                        {{ booking_form.guest_email }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Telefone / WhatsApp *</label>
+                                        {{ booking_form.guest_phone }}
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small fw-semibold">Check-in *</label>
+                                        {{ booking_form.check_in }}
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small fw-semibold">Check-out *</label>
+                                        {{ booking_form.check_out }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Estado</label>
+                                        {{ booking_form.status }}
+                                    </div>
+                                    <div class="col-12 col-md-3 d-flex align-items-end">
+                                        <button type="submit" class="btn bo-btn-accent w-100">
+                                            <i class="fas fa-save me-1"></i> Criar Reserva
+                                        </button>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Observações / Pedidos Especiais</label>
+                                        {{ booking_form.special_requests }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="bo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ref.</th>
+                                        <th>Hóspede</th>
+                                        <th>Alojamento</th>
+                                        <th>Check-in &rarr; Check-out</th>
+                                        <th>Pax</th>
+                                        <th>Total</th>
+                                        <th>Alterar Estado</th>
+                                        <th class="text-end">Contacto / Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for b in recent_bookings %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary font-monospace">#{{ b.reference_code }}</span></td>
+                                        <td>
+                                            <strong>{{ b.guest_name }}</strong><br>
+                                            <small class="text-muted">{{ b.guest_email }} &bull; {{ b.guest_phone }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ b.accommodation.name }}</strong><br>
+                                            {% if b.room_type %}
+                                            <span class="badge bg-primary-subtle text-primary border">{{ b.room_type.name }} ({{ b.units_reserved }} unid.)</span>
+                                            {% else %}
+                                            <span class="badge bg-light text-dark border">Alojamento Inteiro ({{ b.units_reserved }} unid.)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ b.check_in|date:"d/m/Y" }}</strong> &rarr; <strong>{{ b.check_out|date:"d/m/Y" }}</strong><br>
+                                            <small class="text-muted">{{ b.total_nights }} noite{{ b.total_nights|pluralize:"s" }}</small>
+                                        </td>
+                                        <td>{{ b.guests_count }}</td>
+                                        <td><strong style="color: var(--bo-accent);">{{ b.total_price_aoa|floatformat:0 }} Kz</strong></td>
+                                        <td>
+                                            <form method="post" action="{% url 'dashboard:booking_update_status' b.pk %}" class="d-flex align-items-center gap-1">
+                                                {% csrf_token %}
+                                                <select name="status" class="form-select form-select-sm" style="width: 130px;">
+                                                    <option value="pending" {% if b.status == 'pending' %}selected{% endif %}>Pendente</option>
+                                                    <option value="confirmed" {% if b.status == 'confirmed' %}selected{% endif %}>Confirmada</option>
+                                                    <option value="cancelled" {% if b.status == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                                                    <option value="completed" {% if b.status == 'completed' %}selected{% endif %}>Concluída</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-sm bo-btn-primary" title="Guardar Estado">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            {% if b.guest_phone %}
+                                            <a href="https://wa.me/{{ b.guest_phone|cut:' '|cut:'+' }}?text=Ol%C3%A1%20{{ b.guest_name|urlencode }},%20contactamos%20do%20Destinos%20da%20Banda%20sobre%20a%20reserva%20%23{{ b.reference_code }}" target="_blank" class="btn btn-sm btn-success" title="WhatsApp">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'dashboard:record_edit' 'booking' b.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Reserva">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'dashboard:booking_delete' b.pk %}" onsubmit="return confirm('Eliminar reserva #{{ b.reference_code }}?');" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="8" class="text-center py-4 text-muted">Nenhuma reserva de alojamento registada até ao momento.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. Jornadas Multi-Parceiro (TripOrder) -->
+                    <div class="bo-card mt-4">
+                        <div class="bo-card-header">
+                            <div>
+                                <h3 class="bo-card-title"><i class="fas fa-route me-2 text-primary"></i>Jornadas Multi-Parceiro ({{ recent_trip_orders.count }})</h3>
+                                <small class="text-muted">Reservas integradas do Planeador de Viagem (Alojamentos + Guias + Eventos)</small>
+                            </div>
+                            <button class="btn btn-sm bo-btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTripOrderForm" aria-expanded="false">
+                                <i class="fas fa-plus me-1"></i> Nova Jornada
+                            </button>
+                        </div>
+                        <div class="collapse border-bottom bg-light p-3" id="collapseTripOrderForm">
+                            <form method="post" action="{% url 'dashboard:trip_order_add' %}">
+                                {% csrf_token %}
+                                <div class="row g-2">
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Província *</label>
+                                        {{ trip_order_form.province }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Viajante *</label>
+                                        {{ trip_order_form.guest_name }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Email *</label>
+                                        {{ trip_order_form.guest_email }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Telefone / WhatsApp *</label>
+                                        {{ trip_order_form.guest_phone }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Início *</label>
+                                        {{ trip_order_form.start_date }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Fim *</label>
+                                        {{ trip_order_form.end_date }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Viajantes</label>
+                                        {{ trip_order_form.travelers_count }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Total (Kz)</label>
+                                        {{ trip_order_form.total_aoa }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Pagamento</label>
+                                        {{ trip_order_form.payment_method }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Estado Pag.</label>
+                                        {{ trip_order_form.payment_status }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Nº Multicaixa Express</label>
+                                        {{ trip_order_form.payment_phone }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Estado Global</label>
+                                        {{ trip_order_form.status }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Notas</label>
+                                        {{ trip_order_form.notes }}
+                                    </div>
+                                    <div class="col-12 col-md-2 d-flex align-items-end">
+                                        <button type="submit" class="btn bo-btn-primary w-100">
+                                            <i class="fas fa-save me-1"></i> Criar Jornada
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="bo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ref.</th>
+                                        <th>Viajante</th>
+                                        <th>Província / Datas</th>
+                                        <th>Pax / Itens</th>
+                                        <th>Total</th>
+                                        <th>Alterar Estado</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for to in recent_trip_orders %}
+                                    <tr>
+                                        <td><span class="badge bg-primary font-monospace">#{{ to.reference_code }}</span></td>
+                                        <td>
+                                            <strong>{{ to.guest_name }}</strong><br>
+                                            <small class="text-muted">{{ to.guest_email }} &bull; {{ to.guest_phone }}</small>
+                                        </td>
+                                        <td>
+                                            <strong class="text-capitalize">{{ to.province }}</strong><br>
+                                            <small class="text-muted">{{ to.start_date|date:"d/m/Y" }} &rarr; {{ to.end_date|date:"d/m/Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ to.travelers_count }} pax</strong><br>
+                                            <small class="text-muted">{{ to.items.count }} iten(s) &bull; {{ to.get_payment_status_display }}</small>
+                                        </td>
+                                        <td><strong style="color: var(--bo-accent);">{{ to.formatted_total_aoa }}</strong></td>
+                                        <td>
+                                            <form method="post" action="{% url 'dashboard:trip_order_update_status' to.pk %}" class="d-flex align-items-center gap-1">
+                                                {% csrf_token %}
+                                                <select name="status" class="form-select form-select-sm" style="width: 145px;">
+                                                    <option value="pending" {% if to.status == 'pending' %}selected{% endif %}>Pendente</option>
+                                                    <option value="confirmed" {% if to.status == 'confirmed' %}selected{% endif %}>Confirmada</option>
+                                                    <option value="partial_failure" {% if to.status == 'partial_failure' %}selected{% endif %}>Falha Parcial</option>
+                                                    <option value="completed" {% if to.status == 'completed' %}selected{% endif %}>Concluída</option>
+                                                    <option value="cancelled" {% if to.status == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-sm bo-btn-primary" title="Actualizar Estado">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <a href="{% url 'dashboard:record_edit' 'trip_order' to.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Jornada">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'dashboard:trip_order_delete' to.pk %}" onsubmit="return confirm('Eliminar jornada #{{ to.reference_code }}?');" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Nenhuma jornada multi-parceiro registada até ao momento.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 3. Reservas & Inscrições em Tours / Experiências -->
+                    <div class="bo-card mt-4">
+                        <div class="bo-card-header">
+                            <div>
+                                <h3 class="bo-card-title"><i class="fas fa-compass me-2 text-success"></i>Inscrições em Tours e Experiências Turísticas ({{ tour_bookings.count }})</h3>
+                                <small class="text-muted">Ao cancelar uma inscrição, as vagas voltam automaticamente a ficar disponíveis na tour.</small>
+                            </div>
+                            <button class="btn btn-sm bo-btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTourBookingForm" aria-expanded="false">
+                                <i class="fas fa-plus me-1"></i> Nova Inscrição
+                            </button>
+                        </div>
+                        <div class="collapse border-bottom bg-light p-3" id="collapseTourBookingForm">
+                            <form method="post" action="{% url 'dashboard:tour_booking_add' %}">
+                                {% csrf_token %}
+                                <div class="row g-2">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Tour / Evento *</label>
+                                        {{ tour_booking_form.event }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Nome do Participante *</label>
+                                        {{ tour_booking_form.participant_name }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Email *</label>
+                                        {{ tour_booking_form.participant_email }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Telefone / WhatsApp *</label>
+                                        {{ tour_booking_form.participant_phone }}
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small fw-semibold">Data</label>
+                                        {{ tour_booking_form.selected_date }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Participantes</label>
+                                        {{ tour_booking_form.participants_count }}
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label small fw-semibold">Estado</label>
+                                        {{ tour_booking_form.status }}
+                                    </div>
+                                    <div class="col-12 col-md-2 d-flex align-items-end">
+                                        <button type="submit" class="btn bo-btn-primary w-100">
+                                            <i class="fas fa-save me-1"></i> Criar
+                                        </button>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Observações</label>
+                                        {{ tour_booking_form.special_notes }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="bo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ref.</th>
+                                        <th>Participante</th>
+                                        <th>Tour / Experiência</th>
+                                        <th>Vagas</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tb in tour_bookings %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary font-monospace">#{{ tb.reference_code }}</span></td>
+                                        <td>
+                                            <strong>{{ tb.participant_name }}</strong><br>
+                                            <small class="text-muted">{{ tb.participant_phone }} {% if tb.participant_email %}&bull; {{ tb.participant_email }}{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ tb.event.title }}</strong><br>
+                                            <small class="text-muted">{{ tb.event.start_date|date:"d/m/Y" }} &bull; Restam {{ tb.event.available_spots }} vagas</small>
+                                        </td>
+                                        <td><strong>{{ tb.participants_count }} pax</strong></td>
+                                        <td><strong style="color: var(--bo-accent);">{{ tb.total_price_aoa|floatformat:0 }} Kz</strong></td>
+                                        <td>
+                                            <form method="post" action="{% url 'dashboard:tour_booking_update_status' tb.pk %}" class="d-flex align-items-center gap-1">
+                                                {% csrf_token %}
+                                                <select name="status" class="form-select form-select-sm" style="width: 135px;">
+                                                    <option value="pending" {% if tb.status == 'pending' %}selected{% endif %}>Pendente</option>
+                                                    <option value="confirmed" {% if tb.status == 'confirmed' %}selected{% endif %}>Confirmada</option>
+                                                    <option value="completed" {% if tb.status == 'completed' %}selected{% endif %}>Concluída</option>
+                                                    <option value="cancelled" {% if tb.status == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-sm bo-btn-primary" title="Actualizar Estado">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <a href="{% url 'dashboard:record_edit' 'tour_booking' tb.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Inscrição">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'dashboard:tour_booking_delete' tb.pk %}" onsubmit="return confirm('Eliminar inscrição #{{ tb.reference_code }}?');" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Nenhuma inscrição em tours registada até ao momento.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 4. Reservas de Visitas & Agroturismo -->
+                    <div class="bo-card mt-4">
+                        <div class="bo-card-header">
+                            <div>
+                                <h3 class="bo-card-title"><i class="fas fa-seedling me-2 text-success"></i>Agendamentos de Visitas & Agroturismo ({{ visit_bookings.count }})</h3>
+                                <small class="text-muted">Controlo de capacidade diária de visitantes em fazendas, sítios históricos e reservas naturais.</small>
+                            </div>
+                            <button class="btn btn-sm bo-btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVisitBookingForm" aria-expanded="false">
+                                <i class="fas fa-plus me-1"></i> Novo Agendamento
+                            </button>
+                        </div>
+                        <div class="collapse border-bottom bg-light p-3" id="collapseVisitBookingForm">
+                            <form method="post" action="{% url 'dashboard:visit_booking_add' %}">
+                                {% csrf_token %}
+                                <div class="row g-2">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Destino / Fazenda *</label>
+                                        {{ visit_booking_form.destination }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Nome do Visitante *</label>
+                                        {{ visit_booking_form.visitor_name }}
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold">Email *</label>
+                                        {{ visit_booking_form.visitor_email }}
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label small fw-semibold">Telefone / WhatsApp *</label>
+                                        {{ visit_booking_form.visitor_phone }}
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small fw-semibold">Data da Visita *</label>
+                                        {{ visit_booking_form.visit_date }}
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label small fw-semibold">Participantes</label>
+                                        {{ visit_booking_form.participants_count }}
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label small fw-semibold">Estado</label>
+                                        {{ visit_booking_form.status }}
+                                    </div>
+                                    <div class="col-12 col-md-2 d-flex align-items-end">
+                                        <button type="submit" class="btn bo-btn-primary w-100">
+                                            <i class="fas fa-save me-1"></i> Criar
+                                        </button>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Observações</label>
+                                        {{ visit_booking_form.notes }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="bo-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ref.</th>
+                                        <th>Visitante</th>
+                                        <th>Destino / Fazenda</th>
+                                        <th>Data da Visita</th>
+                                        <th>Pax</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vb in visit_bookings %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary font-monospace">#{{ vb.reference_code }}</span></td>
+                                        <td>
+                                            <strong>{{ vb.visitor_name }}</strong><br>
+                                            <small class="text-muted">{{ vb.visitor_phone }} {% if vb.visitor_email %}&bull; {{ vb.visitor_email }}{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ vb.destination.name }}</strong><br>
+                                            <small class="text-muted">{{ vb.destination.category.name|default:"Visita" }}</small>
+                                        </td>
+                                        <td><strong>{{ vb.visit_date|date:"d/m/Y" }}</strong></td>
+                                        <td>{{ vb.participants_count }} pax</td>
+                                        <td><strong style="color: var(--bo-accent);">{{ vb.total_price_aoa|floatformat:0 }} Kz</strong></td>
+                                        <td>
+                                            <form method="post" action="{% url 'dashboard:visit_booking_update_status' vb.pk %}" class="d-flex align-items-center gap-1">
+                                                {% csrf_token %}
+                                                <select name="status" class="form-select form-select-sm" style="width: 135px;">
+                                                    <option value="pending" {% if vb.status == 'pending' %}selected{% endif %}>Pendente</option>
+                                                    <option value="confirmed" {% if vb.status == 'confirmed' %}selected{% endif %}>Confirmada</option>
+                                                    <option value="completed" {% if vb.status == 'completed' %}selected{% endif %}>Realizada</option>
+                                                    <option value="cancelled" {% if vb.status == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-sm bo-btn-primary" title="Actualizar Estado">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <a href="{% url 'dashboard:record_edit' 'visit_booking' vb.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Visita">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'dashboard:visit_booking_delete' vb.pk %}" onsubmit="return confirm('Eliminar agendamento #{{ vb.reference_code }}?');" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="8" class="text-center py-4 text-muted">Nenhum agendamento de visita registado até ao momento.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     5. ROTAS & ROTEIROS
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'routes' %}show active{% endif %}" id="tab-routes" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <!-- Criar Rota -->
+                            <div class="bo-card bo-form-card p-4 mb-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-route me-2 text-success"></i>Criar Nova Rota Turística</h3>
+                                <form method="post" action="{% url 'dashboard:route_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Nome da Rota *</label>
+                                        {{ route_form.name }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Resumo Curto *</label>
+                                        {{ route_form.short_description }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-4">
+                                            <label class="form-label">Dias</label>
+                                            {{ route_form.duration_days }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Dificuldade</label>
+                                            {{ route_form.difficulty }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Estado</label>
+                                            {{ route_form.status }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Imagem de Capa (Upload)</label>
+                                        {{ route_form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou URL da Imagem</label>
+                                        {{ route_form.image_url }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Descrição do Roteiro *</label>
+                                        {{ route_form.description }}
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ route_form.is_featured }}
+                                        <label class="form-check-label small fw-semibold" for="{{ route_form.is_featured.id_for_label }}">Rota em Destaque</label>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-plus me-1"></i> Criar Rota
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Adicionar Paragem a uma Rota -->
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-map-pin me-2"></i>Adicionar Paragem a Rota</h3>
+                                <form method="post" action="{% url 'dashboard:route_stop_add' %}">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Rota *</label>
+                                        {{ route_stop_form.route }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Destino Turístico *</label>
+                                        {{ route_stop_form.destination }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Dia</label>
+                                            {{ route_stop_form.day }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Ordem no Dia</label>
+                                            {{ route_stop_form.order }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Notas da Paragem</label>
+                                        {{ route_stop_form.notes }}
+                                    </div>
+                                    <button type="submit" class="btn btn-sm bo-btn-primary w-100">
+                                        + Associar Paragem à Rota
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Rotas e Itinerários ({{ routes.count }})</h3>
+                                    <a href="{% url 'routes:list' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Rotas no Site
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Capa</th>
+                                                <th>Rota & Paragens</th>
+                                                <th>Duração</th>
+                                                <th class="text-center">Destaque</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for route in routes %}
+                                            <tr>
+                                                <td>
+                                                    {% if route.display_image %}
+                                                    <img src="{{ route.display_image }}" alt="{{ route.name }}" class="bo-thumb">
+                                                    {% else %}
+                                                    <div class="bo-thumb d-flex align-items-center justify-content-center"><i class="fas fa-route text-muted"></i></div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <strong class="d-block">{{ route.name }}</strong>
+                                                    <small class="text-muted d-block mb-1">{{ route.short_description }}</small>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        {% for s in route.stops.all %}
+                                                        <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
+                                                            Dia {{ s.day }}: {{ s.destination.name }}
+                                                            <a href="{% url 'dashboard:record_edit' 'route_stop' s.pk %}" class="text-primary ms-1" title="Editar paragem">
+                                                                <i class="fas fa-pen" style="font-size: 0.6rem;"></i>
+                                                            </a>
+                                                            <form method="post" action="{% url 'dashboard:route_stop_delete' s.pk %}" class="d-inline m-0" onsubmit="return confirm('Remover paragem {{ s.destination.name }}?');">
+                                                                {% csrf_token %}
+                                                                <button type="submit" class="btn-close ms-1" style="font-size: 0.5rem;" title="Remover paragem"></button>
+                                                            </form>
+                                                        </span>
+                                                        {% endfor %}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border">{{ route.duration_days }} dias</span><br>
+                                                    <small class="text-muted">{{ route.get_difficulty_display }}</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <form method="post" action="{% url 'dashboard:route_toggle' route.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="featured">
+                                                        <button type="submit" class="bo-star-btn {% if route.is_featured %}active{% endif %}">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'dashboard:route_toggle' route.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="status">
+                                                        <button type="submit" class="bo-status-btn {% if route.status == 'published' %}published{% else %}draft{% endif %}">
+                                                            {{ route.get_status_display }}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'route' route.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <a href="{% url 'routes:detail' route.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver no Site">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:route_delete' route.pk %}" onsubmit="return confirm('Eliminar a rota {{ route.name }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhuma rota registada.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     6. EVENTOS & ACTIVIDADES
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'events' %}show active{% endif %}" id="tab-events" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-calendar-plus me-2 text-success"></i>Publicar Actividade / Evento</h3>
+                                <form method="post" action="{% url 'dashboard:event_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Título do Evento *</label>
+                                        {{ event_form.title }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Subtítulo / Resumo</label>
+                                        {{ event_form.subtitle }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Tipo *</label>
+                                            {{ event_form.activity_type }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Categoria *</label>
+                                            {{ event_form.category }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Província *</label>
+                                            {{ event_form.province }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Local / Recinto</label>
+                                            {{ event_form.location_venue }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Data Início *</label>
+                                            {{ event_form.start_date }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Data Fim</label>
+                                            {{ event_form.end_date }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Horário</label>
+                                            {{ event_form.time_schedule }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Preço (AOA)</label>
+                                            {{ event_form.price_aoa }}
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch mb-2">
+                                        {{ event_form.is_free }}
+                                        <label class="form-check-label small fw-semibold" for="{{ event_form.is_free.id_for_label }}">Entrada Gratuita</label>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Organizador</label>
+                                        {{ event_form.organizer_name }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Telefone</label>
+                                            {{ event_form.contact_phone }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">WhatsApp</label>
+                                            {{ event_form.contact_whatsapp }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Imagem (Upload)</label>
+                                        {{ event_form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou URL da Imagem</label>
+                                        {{ event_form.image_url }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Descrição da Experiência *</label>
+                                        {{ event_form.description }}
+                                    </div>
+                                    <div class="p-2 rounded bg-light border mb-2">
+                                        <div class="small fw-bold text-success mb-2"><i class="fas fa-compass me-1"></i>Estrutura da Tour / Experiência</div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <label class="form-label">Destino Associado</label>
+                                                {{ event_form.destination }}
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Guia Responsável</label>
+                                                {{ event_form.guide }}
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <label class="form-label">Duração</label>
+                                                {{ event_form.duration }}
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Vagas Máximas</label>
+                                                {{ event_form.max_participants }}
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">Itinerário (1 etapa por linha)</label>
+                                            {{ event_form.itinerary }}
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">Serviços Incluídos (separados por vírgula)</label>
+                                            {{ event_form.included_services }}
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">Contexto Histórico / Cultural / Natural</label>
+                                            {{ event_form.historical_cultural_context }}
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">Condições de Participação</label>
+                                            {{ event_form.participation_conditions }}
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label">Parceiros</label>
+                                                {{ event_form.partners }}
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Vídeo (URL)</label>
+                                                {{ event_form.video_url }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-3 align-items-center">
+                                        <div class="col-6">
+                                            <label class="form-label">Estado</label>
+                                            {{ event_form.status }}
+                                        </div>
+                                        <div class="col-6 pt-3">
+                                            <div class="form-check form-switch">
+                                                {{ event_form.is_featured }}
+                                                <label class="form-check-label small fw-semibold" for="{{ event_form.is_featured.id_for_label }}">Destaque</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-plus me-1"></i> Publicar Evento
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Actividades e Eventos ({{ events.count }})</h3>
+                                    <a href="{% url 'events:list' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Agenda Pública
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Foto</th>
+                                                <th>Evento / Local</th>
+                                                <th>Data</th>
+                                                <th>Ingresso</th>
+                                                <th class="text-center">Destaque</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for ev in events %}
+                                            <tr>
+                                                <td><img src="{{ ev.display_image }}" alt="{{ ev.title }}" class="bo-thumb"></td>
+                                                <td>
+                                                    <strong class="d-block">{{ ev.title }}</strong>
+                                                    <small class="text-muted">{{ ev.location_venue }} &bull; {{ ev.get_province_display }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ ev.start_date|date:"d/m/Y" }}</strong><br>
+                                                    <small class="text-muted">{{ ev.get_status_display }}</small>
+                                                </td>
+                                                <td>
+                                                    {% if ev.is_free %}
+                                                    <span class="badge bg-success">Gratuito</span>
+                                                    {% else %}
+                                                    <strong style="color: var(--bo-accent);">{{ ev.price_aoa|floatformat:0 }} Kz</strong>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    <form method="post" action="{% url 'dashboard:event_toggle' ev.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="bo-star-btn {% if ev.is_featured %}active{% endif %}">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'event' ev.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <a href="{% url 'events:detail' ev.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver no Site">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:event_delete' ev.pk %}" onsubmit="return confirm('Eliminar o evento {{ ev.title }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum evento registado.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     6B. BLOG CULTURAL — HISTÓRIAS, CULTURA E DESTINOS
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'articles' %}show active{% endif %}" id="tab-articles" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-feather-alt me-2 text-success"></i>Publicar Artigo Cultural</h3>
+                                <form method="post" action="{% url 'dashboard:article_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Título do Artigo *</label>
+                                        {{ article_form.title }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Subtítulo Editorial</label>
+                                        {{ article_form.subtitle }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Categoria Temática *</label>
+                                            {{ article_form.topic }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Província *</label>
+                                            {{ article_form.province }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Destino Associado</label>
+                                            {{ article_form.destination }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Tour / Visita Sugerida</label>
+                                            {{ article_form.related_tour }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-8">
+                                            <label class="form-label">Localização</label>
+                                            {{ article_form.location_name }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Leitura (min)</label>
+                                            {{ article_form.reading_time_minutes }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Autor</label>
+                                            {{ article_form.author_name }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Papel / Especialidade</label>
+                                            {{ article_form.author_role }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Imagem de Capa (Upload)</label>
+                                        {{ article_form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou URL da Imagem de Capa</label>
+                                        {{ article_form.image_url }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Legenda da Foto</label>
+                                            {{ article_form.image_caption }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Créditos Fotográficos</label>
+                                            {{ article_form.photographer_credit }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Vídeo Documental (URL)</label>
+                                        {{ article_form.video_url }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Etiquetas / Tags (separadas por vírgula)</label>
+                                        {{ article_form.tags }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Introdução / Lead Editorial *</label>
+                                        {{ article_form.summary }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Corpo do Artigo *</label>
+                                        {{ article_form.content }}
+                                    </div>
+                                    <div class="row g-2 mb-3 align-items-center">
+                                        <div class="col-6">
+                                            <label class="form-label">Estado</label>
+                                            {{ article_form.status }}
+                                        </div>
+                                        <div class="col-6 pt-3">
+                                            <div class="form-check form-switch">
+                                                {{ article_form.is_featured }}
+                                                <label class="form-check-label small fw-semibold" for="{{ article_form.is_featured.id_for_label }}">Em Destaque</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-plus me-1"></i> Publicar Artigo Cultural
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Artigos do Blog Cultural ({{ articles.count }})</h3>
+                                    <a href="{% url 'destinations:article_list' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Blog Cultural
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Capa</th>
+                                                <th>Artigo / Tema</th>
+                                                <th>Integração (Destino / Tour)</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for art in articles %}
+                                            <tr>
+                                                <td><img src="{{ art.display_image }}" alt="{{ art.title }}" class="bo-thumb"></td>
+                                                <td>
+                                                    <strong class="d-block">{{ art.title }}</strong>
+                                                    <span class="badge bg-light text-dark border">{{ art.get_topic_display }}</span>
+                                                    <small class="text-muted ms-1">{{ art.author_name }}</small>
+                                                </td>
+                                                <td>
+                                                    {% if art.destination %}
+                                                    <small class="d-block"><i class="fas fa-map-pin text-success me-1"></i>{{ art.destination.name }}</small>
+                                                    {% endif %}
+                                                    {% if art.related_tour %}
+                                                    <small class="d-block"><i class="fas fa-compass text-warning me-1"></i>{{ art.related_tour.title|truncatechars:35 }}</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'dashboard:article_toggle' art.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="status">
+                                                        <button type="submit" class="bo-status-btn {% if art.status == 'published' %}published{% else %}draft{% endif %}">
+                                                            {{ art.get_status_display }}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'article' art.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <a href="{% url 'destinations:article_detail' art.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver no Site">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:article_delete' art.pk %}" onsubmit="return confirm('Eliminar o artigo {{ art.title }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="5" class="text-center py-4 text-muted">Nenhum artigo cultural publicado.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     7. GALERIA MULTIMÉDIA
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'gallery' %}show active{% endif %}" id="tab-gallery" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-camera me-2 text-success"></i>Adicionar à Galeria</h3>
+                                <form method="post" action="{% url 'dashboard:gallery_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Título *</label>
+                                        {{ gallery_form.title }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Tipo *</label>
+                                            {{ gallery_form.item_type }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Categoria *</label>
+                                            {{ gallery_form.category }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Província *</label>
+                                            {{ gallery_form.province }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Local *</label>
+                                            {{ gallery_form.location_name }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ficheiro de Imagem (Upload)</label>
+                                        {{ gallery_form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou URL da Imagem</label>
+                                        {{ gallery_form.image_url }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Fotógrafo / Créditos</label>
+                                            {{ gallery_form.photographer }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Data</label>
+                                            {{ gallery_form.activity_date }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Descrição *</label>
+                                        {{ gallery_form.description }}
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ gallery_form.is_featured }}
+                                        <label class="form-check-label small fw-semibold" for="{{ gallery_form.is_featured.id_for_label }}">Destaque na Galeria</label>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Publicar na Galeria
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Fotografias & Registos da Galeria ({{ gallery_items.count }})</h3>
+                                    <a href="{% url 'gallery:index' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Galeria Pública
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Foto</th>
+                                                <th>Título / Local</th>
+                                                <th>Tipo / Categoria</th>
+                                                <th>Província</th>
+                                                <th class="text-center">Destaque</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in gallery_items %}
+                                            <tr>
+                                                <td><img src="{{ item.display_image }}" alt="{{ item.title }}" class="bo-thumb"></td>
+                                                <td>
+                                                    <strong class="d-block">{{ item.title }}</strong>
+                                                    <small class="text-muted">{{ item.location_name }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border">{{ item.get_item_type_display }}</span><br>
+                                                    <small class="text-muted">{{ item.get_category_display }}</small>
+                                                </td>
+                                                <td>{{ item.get_province_display }}</td>
+                                                <td class="text-center">
+                                                    <form method="post" action="{% url 'dashboard:gallery_toggle' item.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="bo-star-btn {% if item.is_featured %}active{% endif %}">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'gallery' item.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:gallery_delete' item.pk %}" onsubmit="return confirm('Eliminar {{ item.title }} da galeria?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhuma fotografia registada.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     8. GUIAS TURÍSTICOS
+                     ========================================================= -->
+                <div class="tab-pane fade {% if active_tab == 'guides' %}show active{% endif %}" id="tab-guides" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <div class="bo-card bo-form-card p-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-user-tie me-2 text-success"></i>Registar Guia Turístico</h3>
+                                <form method="post" action="{% url 'dashboard:guide_add' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <label class="form-label">Nome Completo *</label>
+                                        {{ guide_form.nome }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Província *</label>
+                                            {{ guide_form.provincia }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Município</label>
+                                            {{ guide_form.municipio }}
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-4">
+                                            <label class="form-label">Anos Exp.</label>
+                                            {{ guide_form.anos_experiencia }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Tarifa (Kz/dia)</label>
+                                            {{ guide_form.preco_dia_aoa }}
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">USD (opcional)</label>
+                                            {{ guide_form.preco_medio }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Idiomas (ex: pt, en, fr)</label>
+                                        {{ guide_form.idiomas }}
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label">Telefone</label>
+                                            {{ guide_form.telefone }}
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">WhatsApp</label>
+                                            {{ guide_form.whatsapp }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Email</label>
+                                        {{ guide_form.email }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Certificações</label>
+                                        {{ guide_form.certificacoes }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Foto (Upload)</label>
+                                        {{ guide_form.foto }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ou URL da Foto</label>
+                                        {{ guide_form.foto_url }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Especialidades</label>
+                                        {{ guide_form.especialidades }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Destinos onde opera</label>
+                                        {{ guide_form.destinos }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Biografia Profissional *</label>
+                                        {{ guide_form.biografia }}
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3 mb-3">
+                                        <div class="form-check form-switch">
+                                            {{ guide_form.activo }}
+                                            <label class="form-check-label small fw-semibold" for="{{ guide_form.activo.id_for_label }}">Activo</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            {{ guide_form.verificado }}
+                                            <label class="form-check-label small fw-semibold" for="{{ guide_form.verificado.id_for_label }}">Verificado</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            {{ guide_form.destaque }}
+                                            <label class="form-check-label small fw-semibold" for="{{ guide_form.destaque.id_for_label }}">Destaque</label>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn bo-btn-accent w-100">
+                                        <i class="fas fa-plus me-1"></i> Registar Guia
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Especialidades de Guias -->
+                            <div class="bo-card bo-form-card p-4 mt-4">
+                                <h3 class="h6 fw-bold mb-3"><i class="fas fa-award me-2 text-success"></i>Especialidades de Guias ({{ specialties.count }})</h3>
+                                <form method="post" action="{% url 'dashboard:specialty_add' %}" class="mb-3">
+                                    {% csrf_token %}
+                                    <div class="row g-2">
+                                        <div class="col-7">{{ specialty_form.nome }}</div>
+                                        <div class="col-5">{{ specialty_form.icon }}</div>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm bo-btn-primary w-100 mt-2">+ Adicionar Especialidade</button>
+                                </form>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for esp in specialties %}
+                                    <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2 py-2 px-2">
+                                        <i class="{{ esp.icon }}"></i> {{ esp.nome }}
+                                        <a href="{% url 'dashboard:record_edit' 'specialty' esp.pk %}" class="text-primary" title="Editar especialidade {{ esp.nome }}">
+                                            <i class="fas fa-pen" style="font-size: 0.65rem;"></i>
+                                        </a>
+                                        <form method="post" action="{% url 'dashboard:specialty_delete' esp.pk %}" class="d-inline m-0" onsubmit="return confirm('Eliminar especialidade {{ esp.nome }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-close" style="font-size: 0.55rem;" aria-label="Remover"></button>
+                                        </form>
+                                    </span>
+                                    {% empty %}
+                                    <small class="text-muted">Nenhuma especialidade registada.</small>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-8">
+                            <div class="bo-card">
+                                <div class="bo-card-header">
+                                    <h3 class="bo-card-title">Guias Turísticos Registados ({{ guides.count }})</h3>
+                                    <a href="{% url 'guides:list' %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-external-link-alt me-1"></i> Ver Guias no Site
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="bo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Foto</th>
+                                                <th>Guia</th>
+                                                <th>Província / Exp.</th>
+                                                <th>Tarifa / Dia</th>
+                                                <th>Verificado</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for g in guides %}
+                                            <tr>
+                                                <td>
+                                                    {% if g.display_image %}
+                                                    <img src="{{ g.display_image }}" alt="{{ g.nome }}" class="bo-thumb">
+                                                    {% else %}
+                                                    <div class="bo-thumb d-flex align-items-center justify-content-center"><i class="fas fa-user text-muted"></i></div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <strong class="d-block">{{ g.nome }}</strong>
+                                                    <small class="text-muted">{{ g.telefone|default:g.email }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ g.get_provincia_display }}</strong><br>
+                                                    <small class="text-muted">{{ g.anos_experiencia }} anos exp.</small>
+                                                </td>
+                                                <td>
+                                                    {% if g.preco_dia_aoa %}<strong>{{ g.formatted_base_price_aoa }}</strong>/dia{% elif g.preco_medio %}<strong>${{ g.preco_medio }}</strong>/dia{% else %}&mdash;{% endif %}
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'dashboard:guide_toggle' g.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="verificado">
+                                                        <button type="submit" class="bo-status-btn {% if g.verificado %}published{% else %}draft{% endif %}">
+                                                            {% if g.verificado %}<i class="fas fa-check-circle me-1"></i>Verificado{% else %}Não verif.{% endif %}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'dashboard:guide_toggle' g.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="field" value="activo">
+                                                        <button type="submit" class="bo-status-btn {% if g.activo %}published{% else %}draft{% endif %}">
+                                                            {% if g.activo %}Activo{% else %}Inactivo{% endif %}
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <a href="{% url 'dashboard:record_edit' 'guide' g.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                    <a href="{% url 'guides:detail' g.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver no Site">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <form method="post" action="{% url 'dashboard:guide_delete' g.pk %}" onsubmit="return confirm('Eliminar o guia {{ g.nome }}?');" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="7" class="text-center py-4 text-muted">Nenhum guia registado.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleBoSidebar(forceState) {
+    const sidebar = document.getElementById('boSidebar');
+    const backdrop = document.getElementById('boSidebarBackdrop');
+    if (!sidebar) return;
+    const shouldShow = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('show');
+    sidebar.classList.toggle('show', shouldShow);
+    if (backdrop) backdrop.classList.toggle('show', shouldShow);
+}
+
+function switchToTab(tabName, focusForm) {
+    const clean = (tabName || 'overview').trim();
+    const targetPane = document.getElementById(`tab-${clean}`);
+    const triggerEl = document.getElementById(`${clean}-tab`);
+    if (!targetPane) return;
+
+    // Desactivar todos os painéis e botões da barra lateral (independentemente do <ul>)
+    document.querySelectorAll('#boTabContent > .tab-pane').forEach(pane => {
+        pane.classList.remove('show', 'active');
+    });
+    document.querySelectorAll('.bo-sidebar .bo-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Activar o painel e botão alvo
+    targetPane.classList.add('show', 'active');
+    if (triggerEl) {
+        triggerEl.classList.add('active');
+        const titleEl = document.getElementById('boTopbarTitle');
+        if (titleEl && triggerEl.dataset.title) {
+            titleEl.textContent = triggerEl.dataset.title;
+        }
+    }
+
+    // Fechar menu mobile se estiver aberto
+    toggleBoSidebar(false);
+
+    // Limpar filtro de pesquisa ao mudar de módulo
+    const filterInput = document.getElementById('boTableFilter');
+    if (filterInput && filterInput.value) {
+        filterInput.value = '';
+        targetPane.querySelectorAll('tbody tr').forEach(row => { row.style.display = ''; });
+    }
+
+    // Actualizar parâmetro ?tab= no URL
+    const url = new URL(window.location);
+    url.searchParams.set('tab', clean);
+    window.history.replaceState({}, '', url);
+
+    // Rolar para o topo e focar o formulário de criação se solicitado
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (focusForm) {
+        const firstField = targetPane.querySelector('.bo-form-card input:not([type="hidden"]):not([type="checkbox"]), .bo-form-card select, .bo-form-card textarea');
+        if (firstField) {
+            setTimeout(() => firstField.focus(), 120);
+        }
+    }
+}
+
+document.querySelectorAll('.bo-sidebar .bo-nav-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        switchToTab(btn.dataset.tab, false);
+    });
+});
+
+// Sincronizar título da topbar com a aba activa inicial
+(function () {
+    const activeBtn = document.querySelector('.bo-sidebar .bo-nav-btn.active');
+    const titleEl = document.getElementById('boTopbarTitle');
+    if (activeBtn && titleEl && activeBtn.dataset.title) {
+        titleEl.textContent = activeBtn.dataset.title;
+    }
+})();
+
+// Filtro instantâneo de linhas nas tabelas
+const filterInput = document.getElementById('boTableFilter');
+if (filterInput) {
+    filterInput.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        const activePane = document.querySelector('#boTabContent > .tab-pane.active');
+        if (!activePane) return;
+        activePane.querySelectorAll('tbody tr').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+}
+</script>
+</body>
+</html>

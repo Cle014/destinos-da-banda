@@ -1,0 +1,30 @@
+# Variáveis de ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Base de dados local e logs
+db.sqlite3
+db.sqlite3-journal
+logs/
+*.log
+
+# Ficheiros estáticos compilados
+staticfiles/
+
+# Ambiente virtual e cache Python
+venv/
+.venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs e Sistema Operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+# =============================================================
+# DEPENDÊNCIAS DE DESENVOLVIMENTO
+# Apenas para ambiente local — NÃO instalar em produção
+# =============================================================
+
+# Herdar todas as dependências base
+-r base.txt
+
+# Barra de depuração visual no browser — facilita o debugging
+django-debug-toolbar==4.4.2
+
+# Melhora as mensagens de erro do Django em desenvolvimento
+django-extensions==3.2.3
+
+# Geração de dados falsos para testes (fixtures)
+Faker==26.0.0

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Rotas Turísticas{% endblock %}
+{% block meta_description %}Descubra roteiros turísticos completos por Angola — itinerários por dias, destinos ordenados e mapas integrados.{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/routes.css' %}">
+{% endblock %}
+{% block content %}
+<div class="routes-page">
+<section class="routes-header">
+    <div class="container">
+        <div class="routes-eyebrow">Turismo Huambo</div>
+        <h1 class="routes-header-title">Rotas Turísticas do Huambo</h1>
+        <p class="routes-header-sub">
+            Itinerários cuidadosamente planeados para descobrir a província do Huambo ao seu ritmo.
+        </p>
+        <div class="routes-header-meta">
+            <span class="routes-count-badge">
+                <i class="fas fa-route"></i>
+                <strong>{{ total_count }}</strong> rota{{ total_count|pluralize:"s" }} disponíve{{ total_count|pluralize:"l,is" }}
+            </span>
+        </div>
+    </div>
+</section>
+<section class="routes-body">
+    <div class="container">
+        {% if routes %}
+        <div class="routes-grid-header">
+            <div class="section-label-sm">Todos os itinerários</div>
+            <h2 class="section-title-lg">Explore Angola <em>ao seu ritmo</em></h2>
+        </div>
+        <div class="row g-4">
+            {% for route in routes %}
+            <div class="col-12 col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0 }}00">
+                <article class="route-card">
+                    <div class="route-card-img-wrap">
+                        {% if route.display_image %}
+                        <img src="{{ route.display_image }}"
+                             alt="{{ route.name }}"
+                             class="route-card-img"
+                             loading="lazy">
+                        {% else %}
+                        <div class="route-card-img-fallback">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        {% endif %}
+                        <div class="route-card-overlay"></div>
+                        <div class="route-card-badges">
+                            <span class="badge-days">
+                                {{ route.duration_days }} dia{{ route.duration_days|pluralize:"s" }}
+                            </span>
+                            <span class="badge-difficulty {{ route.difficulty }}">
+                                {{ route.get_difficulty_display }}
+                            </span>
+                        </div>
+                        <div class="route-card-stops-count">
+                            <i class="fas fa-map-marker-alt"></i>
+                            {{ route.destinations_count }} paragem{{ route.destinations_count|pluralize:"ns" }}
+                        </div>
+                    </div>
+                    <div class="route-card-body">
+                        <h3 class="route-card-title">{{ route.name }}</h3>
+                        <p class="route-card-desc">{{ route.short_description }}</p>
+                        <div class="route-card-footer">
+                            <a href="{% url 'routes:detail' route.slug %}" class="route-card-link">
+                                Ver roteiro <i class="fas fa-arrow-right"></i>
+                            </a>
+                            {% if route.provinces %}
+                            <div class="route-card-provinces">
+                                <span class="province-dot"></span>
+                                <span class="province-text">{{ route.provinces|length }} província{{ route.provinces|length|pluralize:"s" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="routes-empty" data-aos="fade-up">
+            <i class="fas fa-route"></i>
+            <p>Ainda não há rotas publicadas.<br>Em breve teremos itinerários incríveis para si.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+<section class="routes-cta-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-12 col-lg-7">
+                <div class="cta-label">Pronto para partir?</div>
+                <h2 class="cta-big-title">
+                    O Huambo aguarda<br>por <em>si</em>
+                </h2>
+                <p class="cta-body">
+                    11 municípios, o ponto mais alto de Angola, albufeiras cristalinas e séculos de história no Planalto Central.
+                    Comece hoje a sua aventura pelo Huambo.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{% url 'destinations:list' %}" class="btn-cta-routes">
+                        <i class="fas fa-compass"></i>
+                        Explorar destinos
+                    </a>
+                    <a href="{% url 'gallery:index' %}" class="btn-outline-routes">
+                        <i class="fas fa-images"></i>
+                        Ver galeria
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Alojamento — Hotéis, Suites e Alojamentos de Curta Duração{% endblock %}
+{% block meta_description %}Pesquise e reserve hotéis com diferentes tipologias de quartos e suites, ou casas, apartamentos, quartos e residências de curta duração com disponibilidade por período.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accommodations.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="acc-page">
+
+    <!-- Header -->
+    <section class="acc-header">
+        <div class="container">
+            <div class="acc-eyebrow">
+                <i class="fas fa-hotel" aria-hidden="true"></i>
+                Hotelaria & Alojamento de Curta Duração
+            </div>
+            <h1 class="acc-title">Alojamentos, Hotéis & Estadias Flexíveis</h1>
+            <p class="acc-subtitle mb-3">
+                Reserve quartos e suites em hotéis certificados ou casas, apartamentos e residências de curta duração com disponibilidade calculada em tempo real para as suas datas.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'accommodations:list' %}" class="btn btn-sm {% if not selected_model %}btn-warning fw-bold{% else %}btn-outline-light{% endif %} rounded-pill px-3">
+                    Todos ({{ total_count }})
+                </a>
+                <a href="?mode=hotel{% if check_in %}&check_in={{ check_in }}&check_out={{ check_out }}{% endif %}" class="btn btn-sm {% if selected_model == 'hotel' %}btn-warning fw-bold{% else %}btn-outline-light{% endif %} rounded-pill px-3">
+                    <i class="fas fa-building me-1" aria-hidden="true"></i> Hotéis, Lodges & Suites
+                </a>
+                <a href="?mode=short_stay{% if check_in %}&check_in={{ check_in }}&check_out={{ check_out }}{% endif %}" class="btn btn-sm {% if selected_model == 'short_stay' %}btn-warning fw-bold{% else %}btn-outline-light{% endif %} rounded-pill px-3">
+                    <i class="fas fa-home me-1" aria-hidden="true"></i> Curta Duração (Casas, Apartamentos & Quartos)
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="acc-layout">
+
+            <!-- Sidebar de Pesquisa por Período, Capacidade e Tipo -->
+            <aside class="acc-sidebar" aria-label="Filtros de pesquisa de alojamento">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0 fw-bold"><i class="fas fa-calendar-check text-primary me-2" aria-hidden="true"></i>Datas & Filtros</h2>
+                    {% if is_filtered %}
+                    <a href="{% url 'accommodations:list' %}" class="small text-danger text-decoration-none">Limpar</a>
+                    {% endif %}
+                </div>
+
+                <form method="get" action="{% url 'accommodations:list' %}">
+                    {% if selected_model %}
+                    <input type="hidden" name="mode" value="{{ selected_model }}">
+                    {% endif %}
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="id_acc_check_in">Check-in (Entrada)</label>
+                        <input type="date" id="id_acc_check_in" name="check_in" value="{{ check_in }}" class="acc-input">
+                    </div>
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="id_acc_check_out">Check-out (Saída)</label>
+                        <input type="date" id="id_acc_check_out" name="check_out" value="{{ check_out }}" class="acc-input">
+                    </div>
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="id_acc_guests">Nº de Hóspedes</label>
+                        <input type="number" id="id_acc_guests" name="guests" min="1" max="15" value="{{ guests_filter }}" placeholder="Ex: 2 hóspedes" class="acc-input">
+                    </div>
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="type">Modalidade de Hospedagem</label>
+                        <select id="type" name="type" class="acc-select">
+                            <option value="">Todas as modalidades</option>
+                            {% for type_val, type_label in types %}
+                            <option value="{{ type_val }}" {% if selected_type == type_val %}selected{% endif %}>
+                                {{ type_label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="province">Província</label>
+                        <select id="province" name="province" class="acc-select">
+                            <option value="">Todas as províncias</option>
+                            {% for prov_val, prov_label in provinces %}
+                            <option value="{{ prov_val }}" {% if selected_province == prov_val %}selected{% endif %}>
+                                {{ prov_label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="max_price">Preço Máx. / Noite (Kz)</label>
+                        <input type="number" id="max_price" name="max_price" value="{{ max_price }}" placeholder="Ex: 120000" step="10000" class="acc-input">
+                    </div>
+
+                    <div class="acc-filter-group">
+                        <label class="acc-filter-label" for="q">Nome ou Localização</label>
+                        <input type="text" id="q" name="q" value="{{ search_query }}" placeholder="Hotel, bairro, cidade..." class="acc-input">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 justify-content-center mt-2">
+                        <i class="fas fa-search me-1" aria-hidden="true"></i> Consultar Disponibilidade
+                    </button>
+                </form>
+            </aside>
+
+            <!-- Grelha de Alojamentos -->
+            <div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                    <p class="mb-0 text-muted">
+                        <strong>{{ total_count }}</strong> alojamento{{ total_count|pluralize:"s" }} disponíve{{ total_count|pluralize:"l,is" }}
+                        {% if check_in and check_out %}
+                        <span class="badge bg-success-subtle text-success border ms-1">
+                            Período: {{ check_in }} a {{ check_out }}
+                        </span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                {% if accommodations %}
+                <div class="acc-grid">
+                    {% for acc in accommodations %}
+                    <a href="{% url 'accommodations:detail' acc.slug %}{% if check_in and check_out %}?check_in={{ check_in }}&check_out={{ check_out }}{% if guests_filter %}&guests={{ guests_filter }}{% endif %}{% endif %}"
+                       class="acc-card" data-aos="fade-up">
+                        <div class="acc-card-img-wrap">
+                            <img src="{{ acc.display_image }}" alt="{{ acc.name }}" class="acc-card-img" loading="lazy">
+                            <span class="acc-type-badge {% if acc.is_short_stay %}acc-type-apartment{% endif %}">
+                                {{ acc.accommodation_type_label }}
+                            </span>
+                            <span class="acc-rating-badge">
+                                <i class="fas fa-star" aria-hidden="true"></i> {{ acc.rating }}
+                            </span>
+                        </div>
+                        <div class="acc-card-body">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1">
+                                <div class="acc-card-location mb-0">
+                                    <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                                    {{ acc.city }}, {{ acc.province_label }}
+                                </div>
+                                <span class="badge bg-success-subtle text-success border" style="font-size:0.66rem;">
+                                    <i class="fas fa-door-open me-1" aria-hidden="true"></i>{{ acc.available_units }} unidade{{ acc.available_units|pluralize:"s" }} livre{{ acc.available_units|pluralize:"s" }}
+                                </span>
+                            </div>
+
+                            <h3 class="acc-card-name">{{ acc.name }}</h3>
+                            <p class="acc-card-desc">{{ acc.short_description }}</p>
+
+                            <div class="acc-card-specs">
+                                <span><i class="fas fa-user-friends me-1" aria-hidden="true"></i> Até {{ acc.max_guests }} hóspedes</span>
+                                {% if acc.room_types_count > 0 %}
+                                <span><i class="fas fa-layer-group me-1" aria-hidden="true"></i> {{ acc.room_types_count }} tipologias de quartos</span>
+                                {% else %}
+                                <span><i class="fas fa-bed me-1" aria-hidden="true"></i> {{ acc.bedrooms }} quarto{{ acc.bedrooms|pluralize:"s" }} · {{ acc.bathrooms }} WC</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="acc-card-footer">
+                                <div>
+                                    <div class="acc-price-value">{{ acc.formatted_price_range_aoa|default:acc.formatted_price_aoa }}</div>
+                                    <div class="acc-price-period">por noite em Kz</div>
+                                </div>
+                                <span class="btn-acc-details">
+                                    Ver & Reservar <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 order-surface-card">
+                    <i class="fas fa-bed fa-3x text-muted mb-3" aria-hidden="true"></i>
+                    <h3>Nenhum alojamento disponível para estes critérios</h3>
+                    <p class="text-muted">Experimente alterar as datas de check-in/check-out ou os filtros aplicados.</p>
+                    <a href="{% url 'accommodations:list' %}" class="btn btn-primary-custom mt-2">Ver todos os alojamentos</a>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

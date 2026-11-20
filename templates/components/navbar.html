@@ -1,0 +1,102 @@
+{% load static %}
+<nav class="navbar-main navbar navbar-expand-lg"
+     id="mainNavbar"
+     role="navigation"
+     aria-label="Navegação principal">
+    <div class="container">
+        <a class="navbar-brand-custom" href="{% url 'core:home' %}" aria-label="Destinos da Banda — Página inicial">
+            <img src="{% static 'images/logo-icon.png' %}"
+                 alt="Emblema Destinos da Banda"
+                 class="navbar-logo-img">
+            <div class="navbar-brand-text">
+                <span class="brand-title">DESTINOS</span>
+                <span class="brand-sub">DA BANDA</span>
+            </div>
+        </a>
+        <div class="d-flex align-items-center gap-2 d-lg-none">
+            <button class="dark-mode-toggle"
+                    id="darkModeToggleMobile"
+                    aria-label="Alternar modo escuro"
+                    type="button">
+                <i class="fas fa-moon icon-moon" aria-hidden="true"></i>
+                <i class="fas fa-sun icon-sun" aria-hidden="true"></i>
+            </button>
+            <button class="navbar-toggler border-0 p-1"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarMain"
+                    aria-controls="navbarMain"
+                    aria-expanded="false"
+                    aria-label="Abrir menu">
+                <i class="fas fa-bars" style="font-size: 1.25rem; color: var(--color-primary);"></i>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav mx-auto gap-1 align-items-lg-center">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+                       href="{% url 'core:home' %}">Início</a>
+                </li>
+
+                {% for key, mod in wedge.modules.items %}
+                <li class="nav-item">
+                    {% if mod.is_enabled %}
+                    <a class="nav-link nav-link-custom {% if request.resolver_match.app_name == key %}active{% endif %}"
+                       href="{% url mod.url_name %}">
+                        {{ mod.label }}
+                    </a>
+                    {% else %}
+                    <span class="nav-link nav-link-custom text-muted d-inline-flex align-items-center gap-1"
+                          style="opacity: 0.65; cursor: not-allowed;"
+                          title="Estratégia de Cunha: Módulo em breve em {{ wedge.active_province_label }} ({{ mod.count }}/{{ mod.threshold }} parceiros verificados)">
+                        {{ mod.label }}
+                        <span class="badge bg-secondary" style="font-size:0.58rem; font-weight:600;">Em breve</span>
+                    </span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'planner' %}active{% endif %}"
+                       href="{% url 'routes:planner' %}">
+                        <i class="fas fa-compass me-1" style="color: var(--color-accent);" aria-hidden="true"></i>Planeador
+                        {% if plan_items_count > 0 %}
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">{{ plan_items_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom {% if request.resolver_match.app_name == 'routes' and request.resolver_match.url_name != 'planner' %}active{% endif %}"
+                       href="{% url 'routes:list' %}">Rotas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'article_list' or request.resolver_match.url_name == 'article_detail' %}active{% endif %}"
+                       href="{% url 'destinations:article_list' %}">Histórias</a>
+                </li>
+                {% if request.user.is_authenticated and request.user.is_staff %}
+                <li class="nav-item d-xl-none">
+                    <a class="nav-link nav-link-custom fw-semibold {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}"
+                       href="{% url 'dashboard:home' %}"><i class="fas fa-sliders-h me-1" aria-hidden="true"></i>Painel</a>
+                </li>
+                {% endif %}
+            </ul>
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                {% if request.user.is_authenticated and request.user.is_staff %}
+                <a href="{% url 'dashboard:home' %}" class="btn btn-sm btn-ghost-custom d-none d-xl-inline-flex align-items-center gap-1 py-1 px-3" style="font-size: 0.8rem;">
+                    <i class="fas fa-sliders-h" style="color: var(--color-accent);" aria-hidden="true"></i> Painel
+                </a>
+                {% endif %}
+                <button class="dark-mode-toggle d-none d-lg-flex"
+                        id="darkModeToggle"
+                        aria-label="Alternar modo escuro"
+                        type="button">
+                    <i class="fas fa-moon icon-moon" aria-hidden="true"></i>
+                    <i class="fas fa-sun icon-sun" aria-hidden="true"></i>
+                </button>
+                <a href="{% url 'routes:planner' %}" class="btn btn-navbar-cta">
+                    Planear Viagem
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>

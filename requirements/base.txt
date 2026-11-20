@@ -1,0 +1,31 @@
+# =============================================================
+# DEPENDÊNCIAS BASE — usadas em todos os ambientes
+# =============================================================
+
+# Framework principal (atualizado para corrigir CVEs da série 5.0 EOL: CVE-2024-41989, CVE-2024-42005, CVE-2025-64459)
+Django>=5.1.15,<5.3
+
+# Driver PostgreSQL — opcional
+# -----------------------------------------------------------
+# Só necessário se usares PostgreSQL como base de dados.
+# Para desenvolvimento com SQLite não precisas deste pacote.
+#
+# Para instalar quando necessário:
+#   pip install psycopg2-binary --only-binary=:all:
+# -----------------------------------------------------------
+# psycopg2-binary>=2.9.6  ← descomentar ao mudar para PostgreSQL
+
+# Django REST Framework — para a API REST (fases seguintes)
+djangorestframework==3.15.2
+
+# Gestão de variáveis de ambiente (.env)
+python-decouple==3.8
+
+# Ficheiros estáticos em produção
+whitenoise==6.7.0
+
+# Processamento de imagens (upload de fotos de destinos)
+Pillow>=11.0.0
+
+# Filtragem de querysets (fase 3)
+django-filter==24.2

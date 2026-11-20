@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Guias Turísticos{% endblock %}
+{% block meta_description %}Encontre guias turísticos certificados em Angola. Filtre por província, idioma e especialidade.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/guides.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="guides-page">
+
+<section class="guides-header">
+    <div class="container">
+        <div class="guides-eyebrow">Profissionais Locais — Huambo</div>
+        <h1 class="guides-header-title">Guias Turísticos do Huambo</h1>
+        <p class="guides-header-sub">
+            Profissionais certificados prontos a mostrar-lhe o melhor da província do Huambo — do Morro do Moco às Ombalas históricas.
+        </p>
+        <div class="guides-header-meta">
+            <span class="guides-count-badge">
+                <i class="fas fa-user-tie"></i>
+                <strong>{{ total_count }}</strong> guia{{ total_count|pluralize:"s" }} disponíve{{ total_count|pluralize:"l,is" }}
+            </span>
+        </div>
+    </div>
+</section>
+
+<section class="guides-body">
+    <div class="container">
+        <div class="guides-layout">
+
+            <aside class="guides-sidebar" aria-label="Filtros">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-sliders-h me-2"></i>Filtros</h3>
+                    {% if is_filtered %}
+                    <a href="{% url 'guides:list' %}" class="sidebar-clear">Limpar</a>
+                    {% endif %}
+                </div>
+
+                <div class="sidebar-body">
+                    <form method="get" action="{% url 'guides:list' %}">
+
+                        <div class="filter-group">
+                            <label class="filter-label" for="q">Pesquisar</label>
+                            <input type="text"
+                                   id="q"
+                                   name="q"
+                                   value="{{ filters.q }}"
+                                   placeholder="Nome, município..."
+                                   class="filter-input">
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label" for="provincia">Província</label>
+                            <select id="provincia" name="provincia" class="filter-select">
+                                <option value="">Todas as províncias</option>
+                                {% for val, label in provinces %}
+                                <option value="{{ val }}" {% if filters.provincia == val %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label" for="idioma">Idioma</label>
+                            <select id="idioma" name="idioma" class="filter-select">
+                                <option value="">Todos os idiomas</option>
+                                {% for val, label in idiomas %}
+                                <option value="{{ val }}" {% if filters.idioma == val %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        {% if especialidades %}
+                        <div class="filter-group">
+                            <label class="filter-label">Especialidade</label>
+                            <div class="filter-chips">
+                                {% for esp in especialidades %}
+                                <a href="?especialidade={{ esp.slug }}"
+                                   class="filter-chip {% if filters.especialidade == esp.slug %}active{% endif %}">
+                                    <i class="{{ esp.icon }}"></i>
+                                    {{ esp.nome }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn-filter-apply">
+                            <i class="fas fa-search me-1"></i> Aplicar filtros
+                        </button>
+
+                    </form>
+                </div>
+            </aside>
+
+            <div>
+                <div class="guides-grid-header">
+                    <h2 class="guides-grid-title">
+                        {% if is_filtered %}Resultados{% else %}Todos os <em>guias</em>{% endif %}
+                    </h2>
+                    <span class="guides-result-count">{{ total_count }} encontrado{{ total_count|pluralize:"s" }}</span>
+                </div>
+
+                {% if guides %}
+                <div class="row g-4">
+                    {% for guide in guides %}
+                    <div class="col-12 col-md-6 col-xl-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0 }}00">
+                        <article class="guide-card">
+
+                            <div class="guide-card-photo">
+                                {% if guide.display_image %}
+                                <img src="{{ guide.display_image }}" alt="{{ guide.nome }}" loading="lazy">
+                                {% else %}
+                                <div class="guide-card-photo-fallback">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+
+                                <div class="guide-card-badges">
+                                    {% if guide.verificado %}
+                                    <span class="badge-verificado" title="Critério: {{ guide.criterio_verificacao }}">
+                                        <i class="fas fa-check-circle"></i> Verificado
+                                    </span>
+                                    {% endif %}
+                                    {% if guide.destaque %}
+                                    <span class="badge-destaque">Destaque</span>
+                                    {% endif %}
+                                    {% if guide.is_demo %}
+                                    <span class="badge bg-warning text-dark" style="font-size:0.65rem;">DEMO</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if guide.total_avaliacoes %}
+                                <div class="guide-card-rating">
+                                    <i class="fas fa-star"></i>
+                                    {{ guide.avaliacao_media }}
+                                    <span style="opacity:0.5;font-size:0.7rem;">({{ guide.total_avaliacoes }})</span>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="guide-card-body">
+                                <h3 class="guide-card-name">{{ guide.nome }}</h3>
+                                <p class="guide-card-location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ guide.get_provincia_display }}{% if guide.municipio %}, {{ guide.municipio }}{% endif %}
+                                </p>
+                                <p class="guide-card-bio">{{ guide.biografia }}</p>
+
+                                {% if guide.especialidades.all %}
+                                <div class="guide-card-specialties">
+                                    {% for esp in guide.especialidades.all|slice:":3" %}
+                                    <span class="specialty-tag">
+                                        <i class="{{ esp.icon }}"></i>
+                                        {{ esp.nome }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <div class="small fw-bold text-success mb-2">
+                                    <i class="fas fa-coins me-1"></i> {{ guide.formatted_price_range_aoa }}
+                                </div>
+                                <div class="guide-card-footer">
+                                    <span class="guide-card-exp">
+                                        <i class="fas fa-briefcase"></i>
+                                        {{ guide.anos_experiencia }} ano{{ guide.anos_experiencia|pluralize:"s" }}
+                                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="item_type" value="guide">
+                                            <input type="hidden" name="item_id" value="{{ guide.pk }}">
+                                            <input type="hidden" name="next" value="{{ request.path }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2" style="font-size:0.75rem;" title="Adicionar ao plano">
+                                                + Plano
+                                            </button>
+                                        </form>
+                                        <a href="{% url 'guides:detail' guide.slug %}" class="guide-card-link">
+                                            Ver perfil <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% else %}
+
+                <div class="guides-empty">
+                    <i class="fas fa-user-slash"></i>
+                    <p>
+                        {% if is_filtered %}
+                            Nenhum guia encontrado com estes filtros.<br>
+                            <a href="{% url 'guides:list' %}" style="color: var(--forest-light); text-decoration: none; font-weight: 500;">Limpar filtros</a>
+                        {% else %}
+                            Ainda não há guias publicados.
+                        {% endif %}
+                    </p>
+                </div>
+
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="guides-cta-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-12 col-lg-7">
+                <div class="cta-eyebrow">É guia turístico?</div>
+                <h2 class="cta-title-guides">
+                    Junte-se à nossa<br><em>rede de profissionais</em>
+                </h2>
+                <p class="cta-text-guides">
+                    Crie o seu perfil, defina as suas especialidades e comece a receber turistas de todo o mundo.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="mailto:{{ contact_email }}?subject=Registo%20como%20Guia%20Turistico" class="btn-cta-primary">
+                        <i class="fas fa-envelope"></i>
+                        Contactar para registo
+                    </a>
+                    <a href="{% url 'destinations:list' %}" class="btn-cta-ghost">
+                        <i class="fas fa-compass"></i>
+                        Explorar destinos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+</div>
+{% endblock %}

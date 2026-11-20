@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Jornada #{{ order.reference_code }} — Reserva Única Multi-Parceiro{% endblock %}
+{% block meta_description %}Acompanhe o estado de cada parceiro da sua reserva única #{{ order.reference_code }} no Destinos da Banda.{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Cabeçalho da Reserva Única -->
+    <div class="order-surface-card mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 pb-3 border-bottom">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-dark font-monospace fs-6">#{{ order.reference_code }}</span>
+                    {% if order.status == 'confirmed' %}
+                    <span class="badge bg-success fs-6"><i class="fas fa-check-circle me-1"></i>{{ order.get_status_display }}</span>
+                    {% elif order.status == 'partial_failure' %}
+                    <span class="badge bg-warning text-dark fs-6"><i class="fas fa-exclamation-triangle me-1"></i>{{ order.get_status_display }}</span>
+                    {% elif order.status == 'completed' %}
+                    <span class="badge bg-primary fs-6"><i class="fas fa-award me-1"></i>{{ order.get_status_display }}</span>
+                    {% elif order.status == 'cancelled' %}
+                    <span class="badge bg-danger fs-6">{{ order.get_status_display }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary fs-6">{{ order.get_status_display }}</span>
+                    {% endif %}
+                </div>
+                <h1 class="h3 fw-bold mb-1">Reserva Única da Jornada — {{ order.guest_name }}</h1>
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-calendar-alt me-1"></i> {{ order.start_date|date:"d/m/Y" }} a {{ order.end_date|date:"d/m/Y" }}
+                    · <i class="fas fa-users ms-2 me-1"></i> {{ order.travelers_count }} viajante{{ order.travelers_count|pluralize:"s" }}
+                    · <i class="fas fa-envelope ms-2 me-1"></i> {{ order.guest_email }}
+                </p>
+            </div>
+            <div class="text-md-end">
+                <div class="small text-muted">Valor Total Activo</div>
+                <div class="h3 fw-bold text-success mb-1">{{ order.formatted_total_aoa }}</div>
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    <a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-success rounded-pill px-3">
+                        <i class="fab fa-whatsapp me-1"></i> Partilhar no WhatsApp
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="navigator.clipboard.writeText('{{ share_url }}'); alert('Link copiado!');">
+                        <i class="fas fa-copy me-1"></i> Copiar Link
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados do Pagamento Local -->
+        <div class="row g-3 pt-3">
+            <div class="col-12 col-md-4">
+                <div class="order-sub-card h-100">
+                    <div class="small text-muted">Método de Pagamento Local</div>
+                    <strong class="d-block">{{ order.get_payment_method_display }}</strong>
+                    {% if order.payment_method == 'mcx_express' %}
+                    <small class="text-muted">Telemóvel MCX: {{ order.payment_phone|default:order.guest_phone }}</small>
+                    {% else %}
+                    <small class="text-muted">Entidade: <strong>{{ order.payment_entity }}</strong> · Ref: <strong>{{ order.payment_reference }}</strong></small>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="order-sub-card h-100">
+                    <div class="small text-muted">Estado Financeiro</div>
+                    <strong class="d-block text-success">{{ order.get_payment_status_display }}</strong>
+                    <small class="text-muted">Liquidação em Kwanzas (Kz)</small>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="order-sub-card h-100 d-flex flex-column justify-content-between">
+                    <div class="small text-muted">Verificação & Confiança</div>
+                    {% if order.status == 'completed' %}
+                    <div class="small text-primary fw-bold">
+                        <i class="fas fa-check-double me-1"></i> Código <code>{{ order.reference_code }}</code> habilitado para avaliar parceiros!
+                    </div>
+                    {% else %}
+                    <form method="post" action="{% url 'routes:order_simulate_item' order.reference_code items_with_alts.0.item.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="complete_all">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-flag-checkered me-1"></i> Marcar Viagem como Concluída (Demo)
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta de Falha Parcial quando algum parceiro recusa -->
+    {% if has_declined %}
+    <div class="alert alert-warning border-warning shadow-sm rounded-4 p-4 mb-4" role="alert">
+        <div class="d-flex align-items-center gap-2 fw-bold fs-5 mb-2">
+            <i class="fas fa-exclamation-triangle text-danger"></i>
+            <span>Recuperação de Falha Parcial Activa</span>
+        </div>
+        <p class="small mb-0">
+            Um ou mais parceiros não têm disponibilidade nas datas solicitadas. <strong>Os restantes itens confirmados continuam garantidos!</strong>
+            Pode substituir o item recusado por uma das alternativas verificadas abaixo com 1 clique ou cancelar apenas esse item com ajuste imediato do total em Kz.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Lista de Itens / Parceiros da Reserva Única -->
+    <div class="order-surface-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 fw-bold mb-0"><i class="fas fa-layer-group text-success me-2"></i>Estado por Parceiro & Políticas de Cancelamento</h2>
+            <span class="small text-muted">{{ items_with_alts|length }} item{{ items_with_alts|length|pluralize:"s" }} na jornada</span>
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+            {% for row in items_with_alts %}
+            {% with item=row.item alts=row.alternatives %}
+            <div class="p-3 rounded-4 border {% if item.status == 'declined' %}border-warning bg-warning-subtle{% elif item.status == 'cancelled' %}bg-light opacity-75{% else %}bg-white{% endif %}">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <span class="badge bg-secondary">{{ item.get_item_type_display }}</span>
+                            {% if item.status == 'confirmed' %}
+                            <span class="badge bg-success"><i class="fas fa-check me-1"></i>Confirmado</span>
+                            {% elif item.status == 'declined' %}
+                            <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Recusado pelo Parceiro</span>
+                            {% elif item.status == 'completed' %}
+                            <span class="badge bg-primary"><i class="fas fa-award me-1"></i>Concluído</span>
+                            {% elif item.status == 'cancelled' %}
+                            <span class="badge bg-dark">Cancelado</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                            {% endif %}
+                            {% if item.replaced_by_title %}
+                            <span class="badge bg-info text-dark">{{ item.replaced_by_title }}</span>
+                            {% endif %}
+                        </div>
+
+                        <h3 class="h6 fw-bold mb-1">{{ item.title }}</h3>
+                        <div class="small text-muted mb-1">
+                            Parceiro: <strong>{{ item.partner_name }}</strong> · Dia {{ item.day_number }} · Qtd: {{ item.quantity }} × {{ item.formatted_unit_price_aoa }}
+                        </div>
+                        <div class="small text-secondary">
+                            <i class="fas fa-undo-alt me-1 text-primary"></i>
+                            <strong>Política de Cancelamento:</strong> {{ item.cancellation_policy }}
+                        </div>
+
+                        {% if item.status == 'declined' and item.decline_reason %}
+                        <div class="mt-2 p-2 rounded-3 bg-white border border-danger small text-danger">
+                            <i class="fas fa-info-circle me-1"></i> <strong>Motivo da recusa:</strong> {{ item.decline_reason }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="text-md-end">
+                        <div class="h5 fw-bold {% if item.status == 'declined' or item.status == 'cancelled' %}text-decoration-line-through text-muted{% else %}text-success{% endif %} mb-2">
+                            {{ item.formatted_subtotal_aoa }}
+                        </div>
+
+                        <!-- Acções de Teste / Gestão por Item -->
+                        <div class="d-flex flex-wrap gap-1 justify-content-md-end">
+                            {% if item.status != 'declined' and item.status != 'cancelled' %}
+                            <form method="post" action="{% url 'routes:order_simulate_item' order.reference_code item.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="declined">
+                                <button type="submit" class="btn btn-sm btn-outline-warning text-dark" style="font-size:0.75rem;" title="Simular recusa deste parceiro para testar falha parcial">
+                                    <i class="fas fa-bolt me-1"></i> Simular Falha Parcial
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if item.status != 'cancelled' %}
+                            <form method="post" action="{% url 'routes:order_cancel_item' order.reference_code item.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.75rem;">
+                                    <i class="fas fa-ban me-1"></i> Cancelar Item
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if item.status == 'completed' and item.item_type == 'guide' and item.item_slug %}
+                            <a href="{% url 'guides:detail' item.item_slug %}#booking_reference" class="btn btn-sm btn-primary" style="font-size:0.75rem;">
+                                <i class="fas fa-star me-1"></i> Avaliar Guia
+                            </a>
+                            {% elif item.status == 'completed' and item.item_type == 'accommodation' and item.item_slug %}
+                            <a href="{% url 'accommodations:detail' item.item_slug %}" class="btn btn-sm btn-primary" style="font-size:0.75rem;">
+                                <i class="fas fa-star me-1"></i> Avaliar Alojamento
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel de Alternativas Automáticas em Caso de Falha Parcial -->
+                {% if item.status == 'declined' %}
+                <div class="mt-3 pt-3 border-top border-warning">
+                    <h4 class="h6 fw-bold text-dark mb-2">
+                        <i class="fas fa-exchange-alt text-success me-1"></i> Alternativas Verificadas Disponíveis na Província ({{ alts|length }})
+                    </h4>
+                    {% if alts %}
+                    <div class="row g-2">
+                        {% for alt in alts %}
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 bg-white rounded-3 border h-100 d-flex flex-column justify-content-between">
+                                <div>
+                                    <strong class="d-block small">{{ alt.title }}</strong>
+                                    <small class="text-muted d-block mb-1">{{ alt.partner_name }}</small>
+                                    <span class="badge bg-success-subtle text-success border mb-2">{{ alt.formatted_price }}</span>
+                                    <div class="text-muted" style="font-size:0.7rem;">{{ alt.cancellation_policy }}</div>
+                                </div>
+                                <form method="post" action="{% url 'routes:order_replace_item' order.reference_code item.pk %}" class="mt-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="replacement_id" value="{{ alt.id }}">
+                                    <button type="submit" class="btn btn-sm btn-success w-100 fw-semibold">
+                                        <i class="fas fa-check me-1"></i> Substituir por esta opção
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="small text-muted mb-0">Não existem alternativas adicionais nesta categoria. Pode cancelar este item sem penalização.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-4 pt-3 border-top gap-2">
+            <a href="{% url 'routes:planner' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Voltar ao Planeador
+            </a>
+            <a href="{% url 'core:home' %}" class="btn btn-primary-custom btn-sm">
+                <i class="fas fa-compass me-1"></i> Continuar a Explorar o Huambo
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

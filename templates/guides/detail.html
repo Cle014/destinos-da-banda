@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ guide.nome }}{% endblock %}
+{% block meta_description %}{{ guide.biografia|truncatechars:160 }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/guides.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="guides-page">
+
+<section class="guide-detail-hero" aria-label="{{ guide.nome }}">
+    {% if guide.display_image %}
+    <img src="{{ guide.display_image }}" alt="{{ guide.nome }}" class="guide-hero-photo">
+    {% else %}
+    <div class="guide-hero-fallback"><i class="fas fa-user"></i></div>
+    {% endif %}
+
+    <div class="guide-hero-overlay" aria-hidden="true"></div>
+
+    <div class="guide-hero-content">
+        <div class="container">
+            <nav aria-label="Navegação">
+                <ol class="guide-hero-breadcrumb">
+                    <li><a href="{% url 'core:home' %}">Início</a></li>
+                    <li class="sep"><i class="fas fa-chevron-right"></i></li>
+                    <li><a href="{% url 'guides:list' %}">Guias</a></li>
+                    <li class="sep"><i class="fas fa-chevron-right"></i></li>
+                    <li class="current">{{ guide.nome }}</li>
+                </ol>
+            </nav>
+
+            <h1 class="guide-hero-name">{{ guide.nome }}</h1>
+
+            <div class="guide-hero-pills">
+                <span class="hero-pill">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ guide.get_provincia_display }}{% if guide.municipio %}, {{ guide.municipio }}{% endif %}
+                </span>
+                <span class="hero-pill">
+                    <i class="fas fa-briefcase"></i>
+                    {{ guide.anos_experiencia }} ano{{ guide.anos_experiencia|pluralize:"s" }} de experiência
+                </span>
+                {% if guide.total_avaliacoes %}
+                <span class="hero-pill hero-pill-gold">
+                    <i class="fas fa-star"></i>
+                    {{ guide.avaliacao_media }} ({{ guide.total_avaliacoes }} avaliação{{ guide.total_avaliacoes|pluralize:"ões" }})
+                </span>
+                {% endif %}
+                {% if guide.verificado %}
+                <span class="hero-pill hero-pill-gold" title="{{ guide.criterio_verificacao }}">
+                    <i class="fas fa-check-circle"></i>
+                    Verificado
+                </span>
+                {% endif %}
+                {% if guide.is_demo %}
+                <span class="badge bg-warning text-dark">DEMO</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="guide-body">
+    <div class="container">
+        <div class="row g-4 g-lg-5">
+
+            <div class="col-12 col-lg-8">
+
+                <div class="guide-bio-card" data-aos="fade-up">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h2 class="guide-section-title mb-0">Sobre {{ guide.nome }}</h2>
+                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="guide">
+                            <input type="hidden" name="item_id" value="{{ guide.pk }}">
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                                <i class="fas fa-plus-circle me-1"></i> Adicionar Guia ao Plano
+                            </button>
+                        </form>
+                    </div>
+                    {% if guide.verificado %}
+                    <div class="alert alert-success py-2 px-3 small mb-3">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        <strong>Critério de Verificação:</strong> {{ guide.criterio_verificacao }}
+                    </div>
+                    {% endif %}
+                    <p class="guide-bio-text">{{ guide.biografia }}</p>
+                </div>
+
+                <div class="guide-info-grid" data-aos="fade-up" data-aos-delay="50">
+                    <div class="guide-info-item">
+                        <div class="guide-info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <div class="guide-info-label">Localização</div>
+                            <div class="guide-info-value">
+                                {{ guide.get_provincia_display }}
+                                {% if guide.municipio %}<br><span style="font-weight:300;font-size:0.82rem;color:var(--text-mid);">{{ guide.municipio }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="guide-info-item">
+                        <div class="guide-info-icon"><i class="fas fa-briefcase"></i></div>
+                        <div>
+                            <div class="guide-info-label">Experiência</div>
+                            <div class="guide-info-value">{{ guide.anos_experiencia }} ano{{ guide.anos_experiencia|pluralize:"s" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="guide-info-item">
+                        <div class="guide-info-icon"><i class="fas fa-coins"></i></div>
+                        <div>
+                            <div class="guide-info-label">Faixa diária (Kz)</div>
+                            <div class="guide-info-value">{{ guide.formatted_price_range_aoa }}</div>
+                        </div>
+                    </div>
+
+                    {% if guide.certificacoes %}
+                    <div class="guide-info-item">
+                        <div class="guide-info-icon"><i class="fas fa-certificate"></i></div>
+                        <div>
+                            <div class="guide-info-label">Certificações</div>
+                            <div class="guide-info-value" style="font-size:0.82rem;font-weight:300;">{{ guide.certificacoes|truncatechars:60 }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if guide.especialidades.all %}
+                <div class="guide-specialties-section" data-aos="fade-up">
+                    <h2 class="guide-section-title">Especialidades</h2>
+                    <div class="specialties-grid">
+                        {% for esp in guide.especialidades.all %}
+                        <span class="specialty-badge">
+                            <i class="{{ esp.icon }}"></i>
+                            {{ esp.nome }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if guide.idiomas %}
+                <div class="guide-languages-section" data-aos="fade-up">
+                    <h2 class="guide-section-title">Idiomas</h2>
+                    <div class="languages-grid">
+                        {% for idioma in guide.idiomas_display %}
+                        <span class="language-badge">
+                            <i class="fas fa-language" style="font-size:0.75rem;color:var(--sage);"></i>
+                            {{ idioma }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if guide.destinos.all %}
+                <div class="guide-bio-card" data-aos="fade-up">
+                    <h2 class="guide-section-title">Destinos onde opera</h2>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for dest in guide.destinos.all %}
+                        <a href="{% url 'destinations:detail' dest.slug %}"
+                           style="display:inline-flex;align-items:center;gap:0.3rem;
+                                  background:rgba(45,106,79,0.06);border:1px solid rgba(45,106,79,0.14);
+                                  color:var(--forest-light);font-size:0.8rem;font-weight:500;
+                                  padding:0.35rem 0.8rem;border-radius:100px;text-decoration:none;
+                                  transition:background 0.2s ease;">
+                            <i class="fas fa-map-marker-alt" style="font-size:0.65rem;"></i>
+                            {{ dest.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="reviews-section" data-aos="fade-up">
+                    <h2 class="guide-section-title">Avaliações</h2>
+
+                    {% if guide.total_avaliacoes %}
+                    <div class="rating-summary">
+                        <div class="rating-big">
+                            <div class="rating-big-number">{{ guide.avaliacao_media }}</div>
+                            <div class="rating-big-stars">
+                                {% for i in range_5 %}
+                                <i class="fas fa-star {% if i > guide.estrelas_inteiras %}empty{% elif i == guide.estrelas_inteiras and guide.tem_meia_estrela %}{% else %}{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <div class="rating-big-count">{{ guide.total_avaliacoes }} avaliação{{ guide.total_avaliacoes|pluralize:"ões" }}</div>
+                        </div>
+
+                        {% if avaliacoes %}
+                        <div class="rating-divider"></div>
+                        <div class="rating-breakdown">
+                            {% with av=avaliacoes.0 %}
+                            <div class="rating-row">
+                                <span class="rating-row-label">Pontualidade</span>
+                                <div class="rating-bar">
+                                    <div class="rating-bar-fill" style="width:{{ av.pontualidade|floatformat:0 }}0%"></div>
+                                </div>
+                                <span class="rating-row-val">{{ av.pontualidade }}.0</span>
+                            </div>
+                            <div class="rating-row">
+                                <span class="rating-row-label">Simpatia</span>
+                                <div class="rating-bar">
+                                    <div class="rating-bar-fill" style="width:{{ av.simpatia|floatformat:0 }}0%"></div>
+                                </div>
+                                <span class="rating-row-val">{{ av.simpatia }}.0</span>
+                            </div>
+                            <div class="rating-row">
+                                <span class="rating-row-label">Conhecimento</span>
+                                <div class="rating-bar">
+                                    <div class="rating-bar-fill" style="width:{{ av.conhecimento|floatformat:0 }}0%"></div>
+                                </div>
+                                <span class="rating-row-val">{{ av.conhecimento }}.0</span>
+                            </div>
+                            <div class="rating-row">
+                                <span class="rating-row-label">Organização</span>
+                                <div class="rating-bar">
+                                    <div class="rating-bar-fill" style="width:{{ av.organizacao|floatformat:0 }}0%"></div>
+                                </div>
+                                <span class="rating-row-val">{{ av.organizacao }}.0</span>
+                            </div>
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% for av in avaliacoes %}
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="review-author">
+                                <div class="review-avatar">{{ av.reviewer_name|default:"V"|first|upper }}</div>
+                                <div>
+                                    <div class="review-author-name">
+                                        {{ av.reviewer_name|default:"Viajante Verificado" }}
+                                        {% if av.booking_reference %}
+                                        <span class="badge bg-success-subtle text-success border ms-1" style="font-size:0.68rem;">
+                                            <i class="fas fa-check-circle"></i> Reserva Concluída #{{ av.booking_reference }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="review-date">{{ av.data|date:"d M Y" }}</div>
+                                </div>
+                            </div>
+                            <div class="review-stars">
+                                {% for i in range_5 %}
+                                <i class="fas fa-star {% if i > av.classificacao %}empty{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if av.comentario %}
+                        <p class="review-comment">{{ av.comentario }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    {% else %}
+                    <p style="color:var(--text-light);font-size:0.9rem;font-weight:300;padding:1rem 0;">
+                        Ainda sem avaliações verificadas.
+                    </p>
+                    {% endif %}
+
+                    <div class="rating-form-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h3 class="rating-form-title mb-0">Avaliar {{ guide.nome }}</h3>
+                            <span class="badge bg-success-subtle text-success border">Exclusivo para Reservas Concluídas</span>
+                        </div>
+                        <p class="small text-muted mb-3">
+                            Para garantir avaliações 100% autênticas, introduza o código da sua jornada concluída (ex.: <code>DB-XXXXXX</code>).
+                        </p>
+                        <form method="post" action="{% url 'guides:avaliar' guide.slug %}">
+                            {% csrf_token %}
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-sm-6">
+                                    <label class="rating-form-label" for="booking_reference">Código da Reserva Concluída *</label>
+                                    <input type="text" id="booking_reference" name="booking_reference" required class="form-control form-control-sm" placeholder="Ex: DB-A1B2C3">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="rating-form-label" for="contact_verify">Email ou Telefone da Reserva (opcional)</label>
+                                    <input type="text" id="contact_verify" name="contact_verify" class="form-control form-control-sm" placeholder="Email ou telefone usado na reserva">
+                                </div>
+                            </div>
+
+                            <div class="rating-form-group">
+                                <label class="rating-form-label">Classificação geral</label>
+                                <div class="star-selector-wrap">
+                                    {% for i in "54321" %}
+                                    <input type="radio" name="classificacao" id="cl{{ i }}" value="{{ i }}" {% if forloop.first %}checked{% endif %}>
+                                    <label for="cl{{ i }}">★</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <div class="rating-form-group">
+                                        <label class="rating-form-label">Pontualidade</label>
+                                        <select name="pontualidade" class="filter-select">
+                                            {% for i in range_5 %}<option value="{{ i }}" {% if i == 5 %}selected{% endif %}>{{ i }} ★</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="rating-form-group">
+                                        <label class="rating-form-label">Simpatia</label>
+                                        <select name="simpatia" class="filter-select">
+                                            {% for i in range_5 %}<option value="{{ i }}" {% if i == 5 %}selected{% endif %}>{{ i }} ★</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="rating-form-group">
+                                        <label class="rating-form-label">Conhecimento</label>
+                                        <select name="conhecimento" class="filter-select">
+                                            {% for i in range_5 %}<option value="{{ i }}" {% if i == 5 %}selected{% endif %}>{{ i }} ★</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="rating-form-group">
+                                        <label class="rating-form-label">Organização</label>
+                                        <select name="organizacao" class="filter-select">
+                                            {% for i in range_5 %}<option value="{{ i }}" {% if i == 5 %}selected{% endif %}>{{ i }} ★</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rating-form-group">
+                                <label class="rating-form-label" for="comentario">Comentário sobre a experiência</label>
+                                <textarea id="comentario" name="comentario" class="form-textarea"
+                                          placeholder="Partilhe como correu o percurso com este guia..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn-submit-review">
+                                <i class="fas fa-check-double"></i>
+                                Validar Reserva Concluída & Submeter
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-12 col-lg-4">
+
+                <div class="guide-price-card" data-aos="fade-left">
+                    <div class="price-label">Faixa diária em Kwanzas</div>
+                    <div class="price-value" style="font-size:1.45rem;">{{ guide.formatted_price_range_aoa }}</div>
+                    <div class="price-unit">Tarifa transparente em Kz · {{ guide.cancellation_policy }}</div>
+                </div>
+
+                <div class="guide-contact-sidebar" data-aos="fade-left" data-aos-delay="50">
+                    <div class="contact-header">
+                        <h3>Contactar {{ guide.nome|truncatechars:20 }}</h3>
+                        <p>Contacte directamente o guia</p>
+                    </div>
+                    <div class="contact-body">
+
+                        {% if guide.whatsapp %}
+                        <a href="https://wa.me/{{ guide.whatsapp|cut:'+' }}" target="_blank" rel="noopener"
+                           class="contact-whatsapp-primary">
+                            <i class="fab fa-whatsapp"></i>
+                            Enviar mensagem no WhatsApp
+                        </a>
+                        {% endif %}
+
+                        {% if guide.telefone %}
+                        <a href="tel:{{ guide.telefone }}" class="contact-item">
+                            <div class="contact-icon phone"><i class="fas fa-phone"></i></div>
+                            <div>
+                                <div class="contact-label">Telefone</div>
+                                <div class="contact-value">{{ guide.telefone }}</div>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if guide.email %}
+                        <a href="mailto:{{ guide.email }}" class="contact-item">
+                            <div class="contact-icon email"><i class="fas fa-envelope"></i></div>
+                            <div>
+                                <div class="contact-label">Email</div>
+                                <div class="contact-value">{{ guide.email }}</div>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if guide.instagram %}
+                        <a href="{{ guide.instagram }}" target="_blank" rel="noopener" class="contact-item">
+                            <div class="contact-icon instagram"><i class="fab fa-instagram"></i></div>
+                            <div>
+                                <div class="contact-label">Instagram</div>
+                                <div class="contact-value">Ver perfil</div>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if guide.facebook %}
+                        <a href="{{ guide.facebook }}" target="_blank" rel="noopener" class="contact-item">
+                            <div class="contact-icon facebook"><i class="fab fa-facebook-f"></i></div>
+                            <div>
+                                <div class="contact-label">Facebook</div>
+                                <div class="contact-value">Ver página</div>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if not guide.telefone and not guide.whatsapp and not guide.email %}
+                        <p style="color:var(--text-light);font-size:0.85rem;font-weight:300;padding:0.5rem 0;">
+                            Sem contactos disponíveis.
+                        </p>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+                {% if related %}
+                <div class="related-guides-section" data-aos="fade-left" data-aos-delay="100">
+                    <div class="related-guides-title">Outros guias em {{ guide.get_provincia_display }}</div>
+                    {% for rg in related %}
+                    <a href="{% url 'guides:detail' rg.slug %}" class="related-guide-item">
+                        {% if rg.foto %}
+                        <img src="{{ rg.foto.url }}" alt="{{ rg.nome }}" class="related-guide-photo" loading="lazy">
+                        {% else %}
+                        <div class="related-guide-photo-fallback"><i class="fas fa-user"></i></div>
+                        {% endif %}
+                        <div>
+                            <div class="related-guide-name">{{ rg.nome }}</div>
+                            <div class="related-guide-meta">
+                                {{ rg.anos_experiencia }}a experiência
+                                {% if rg.total_avaliacoes %}
+                                · <i class="fas fa-star" style="color: #F0A820; font-size: 0.72rem;"></i> {{ rg.avaliacao_media }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</section>
+
+</div>
+{% endblock %}

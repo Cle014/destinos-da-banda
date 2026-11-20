@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Blog Cultural — Histórias, Cultura e Destinos{% endblock %}
+{% block meta_description %}Artigos editoriais sobre a história, cultura, tradições, património, gastronomia, agroturismo e biodiversidade dos destinos angolanos.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/destinations.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="destinations-header">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
+            <div>
+                <p class="dest-list-eyebrow">
+                    <i class="fas fa-feather-alt" aria-hidden="true"></i>
+                    Editorial & Memória Local
+                </p>
+                <h1 class="destinations-header-title">Blog Cultural — Histórias & Património</h1>
+                <p class="destinations-header-sub mb-0">
+                    Crónicas, investigações históricas, saberes rurais, biodiversidade e tradições que dão alma aos destinos de Angola.
+                </p>
+            </div>
+            <a href="{% url 'destinations:list' %}" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                <i class="fas fa-compass me-1" aria-hidden="true"></i> Explorar Destinos & Visitas
+            </a>
+        </div>
+    </div>
+</section>
+
+<div class="container py-5">
+    <!-- Barra de Filtros por Tema e Pesquisa -->
+    <div class="order-surface-card mb-4">
+        <form method="get" action="{% url 'destinations:article_list' %}" class="row g-3 align-items-center">
+            <div class="col-12 col-lg-7">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'destinations:article_list' %}"
+                       class="home-wedge-chip text-decoration-none {% if not selected_topic %}fw-bold{% endif %}"
+                       style="{% if not selected_topic %}background: var(--color-primary); color: #fff;{% endif %}">
+                        Todos os Temas ({{ total_count }})
+                    </a>
+                    {% for t_val, t_label in topics %}
+                    <a href="?topic={{ t_val }}{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                       class="home-wedge-chip text-decoration-none {% if selected_topic == t_val %}fw-bold{% endif %}"
+                       style="{% if selected_topic == t_val %}background: var(--color-accent); color: #fff;{% endif %}">
+                        {{ t_label }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <select name="province" class="form-select form-select-sm" aria-label="Província" onchange="this.form.submit()">
+                    <option value="">Todas Províncias</option>
+                    {% for p_val, p_label in provinces %}
+                    <option value="{{ p_val }}" {% if selected_province == p_val %}selected{% endif %}>{{ p_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-lg-3 d-flex gap-2">
+                <input type="search" name="q" value="{{ search_query }}" class="form-control form-control-sm" placeholder="Pesquisar história, tema...">
+                <button type="submit" class="btn btn-sm btn-primary-custom" aria-label="Pesquisar">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if articles %}
+    <div class="row g-4">
+        {% for art in articles %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <article class="order-surface-card p-0 overflow-hidden h-100 d-flex flex-column">
+                <a href="{% url 'destinations:article_detail' art.slug %}" class="text-decoration-none">
+                    <div class="position-relative" style="height: 220px; overflow: hidden;">
+                        <img src="{{ art.display_image }}" alt="{{ art.title }}" class="w-100 h-100" style="object-fit: cover;" loading="lazy">
+                        <span class="badge position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2" style="background: var(--color-primary);">
+                            {{ art.get_topic_display }}
+                        </span>
+                    </div>
+                </a>
+                <div class="p-4 d-flex flex-column flex-grow-1">
+                    <div class="small text-muted mb-2">
+                        <i class="fas fa-map-marker-alt me-1" style="color: var(--color-accent);" aria-hidden="true"></i>
+                        {{ art.location_name|default:art.get_province_display }}
+                        · <i class="fas fa-clock ms-1 me-1" aria-hidden="true"></i>{{ art.reading_time_minutes }} min leitura
+                    </div>
+                    <h2 class="h5 fw-bold mb-2">
+                        <a href="{% url 'destinations:article_detail' art.slug %}" class="text-decoration-none">{{ art.title }}</a>
+                    </h2>
+                    <p class="small text-muted flex-grow-1 mb-3">{{ art.subtitle|default:art.summary|truncatechars:140 }}</p>
+
+                    {% if art.tags %}
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        {% for tag in art.tags|slice:":3" %}
+                        <a href="?tag={{ tag|urlencode }}" class="badge bg-light text-dark border text-decoration-none" style="font-size:0.68rem;">#{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top small">
+                        <span class="text-muted">Por <strong>{{ art.author_name }}</strong></span>
+                        <a href="{% url 'destinations:article_detail' art.slug %}" class="fw-bold text-decoration-none" style="color: var(--color-accent);">
+                            Ler artigo <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="order-surface-card text-center py-5">
+        <i class="fas fa-book-open fa-3x text-muted mb-3" aria-hidden="true"></i>
+        <h3>Nenhum artigo encontrado</h3>
+        <p class="text-muted">Experimente limpar os filtros para explorar todas as histórias culturais.</p>
+        <a href="{% url 'destinations:article_list' %}" class="btn btn-primary-custom">Ver todos os artigos</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

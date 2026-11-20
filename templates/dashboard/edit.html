@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Editar {{ model_label }} — Backoffice {{ site_name }}</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+</head>
+<body class="bo-body">
+<div class="bo-shell">
+    <aside class="bo-sidebar">
+        <a href="{% url 'dashboard:home' %}" class="bo-brand">
+            <img src="{% static 'images/logo-icon-light.png' %}" alt="Logo" class="bo-brand-logo">
+            <div>
+                <span class="bo-brand-title">DESTINOS DA BANDA</span>
+                <span class="bo-brand-sub">Centro de Gestão</span>
+            </div>
+        </a>
+        <div class="bo-nav-scroll">
+            <a href="{% url 'dashboard:home' %}?tab={{ return_tab }}" class="bo-nav-btn active">
+                <span><i class="fas fa-arrow-left"></i> Voltar à listagem</span>
+            </a>
+        </div>
+        <div class="bo-sidebar-footer">
+            <a href="{% url 'core:home' %}" target="_blank" class="btn btn-sm btn-outline-light w-100">
+                <i class="fas fa-external-link-alt me-1"></i> Ver Portal Público
+            </a>
+        </div>
+    </aside>
+
+    <div class="bo-main">
+        <header class="bo-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'dashboard:home' %}?tab={{ return_tab }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+                <h1 class="bo-topbar-title">Editar {{ model_label }}: {{ instance }}</h1>
+            </div>
+        </header>
+
+        <main class="bo-content">
+            {% if messages %}
+            <div class="row justify-content-center mb-3">
+                <div class="col-12 col-xl-9">
+                    {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm mb-2" role="alert">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle text-success{% elif message.tags == 'error' %}fa-exclamation-triangle text-danger{% else %}fa-info-circle{% endif %} fs-5"></i>
+                        <div class="flex-grow-1">{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row justify-content-center">
+                <div class="col-12 col-xl-9">
+                    <div class="bo-card bo-form-card p-4">
+                        {% if instance.display_image %}
+                        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                            <img src="{{ instance.display_image }}" alt="{{ instance }}" style="width: 110px; height: 74px; object-fit: cover; border-radius: 10px;">
+                            <div>
+                                <div class="fw-bold">{{ instance }}</div>
+                                <small class="text-muted">Imagem actual associada a este registo</small>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                {% for field in form %}
+                                <div class="{% if field.field.widget.input_type == 'checkbox' %}col-12 col-md-4{% elif 'description' in field.name or 'biografia' in field.name or 'amenities' in field.name or 'notes' in field.name or 'requests' in field.name or 'itinerary' in field.name or 'conditions' in field.name or 'context' in field.name or 'rules' in field.name or 'content' in field.name or 'summary' in field.name or 'services' in field.name or 'activities' in field.name %}col-12{% else %}col-12 col-md-6{% endif %}">
+                                    {% if field.field.widget.input_type == 'checkbox' %}
+                                    <div class="form-check form-switch mt-2">
+                                        {{ field }}
+                                        <label class="form-check-label fw-semibold small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    </div>
+                                    {% else %}
+                                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                    <div class="form-text small">{{ field.help_text }}</div>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                    <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                                <a href="{% url 'dashboard:home' %}?tab={{ return_tab }}" class="btn btn-outline-secondary">Cancelar</a>
+                                <button type="submit" class="btn bo-btn-accent px-4">
+                                    <i class="fas fa-save me-1"></i> Guardar Alterações
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

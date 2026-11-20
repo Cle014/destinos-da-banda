@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ destination.name }} — Visitas & Experiências{% endblock %}
+{% block meta_description %}{{ destination.short_description }}{% endblock %}
+{% block extra_css %}
+{% if has_map %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endif %}
+<link rel="stylesheet" href="{% static 'css/destinations.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="detail-hero" aria-label="{{ destination.name }}">
+    {% if destination.display_image %}
+    <img src="{{ destination.display_image }}"
+         alt="{{ destination.name }}"
+         class="detail-hero-img">
+    {% else %}
+    <div class="detail-hero-img" style="background: linear-gradient(135deg, #151B16, #2D3B2E);"></div>
+    {% endif %}
+    <div class="detail-hero-overlay" aria-hidden="true"></div>
+    <div class="detail-hero-content">
+        <div class="container">
+            <nav aria-label="Navegação de contexto" class="mb-3">
+                <ol class="d-flex align-items-center gap-2 list-unstyled small mb-0 flex-wrap" style="color:rgba(255,255,255,0.75);">
+                    <li><a href="{% url 'core:home' %}" class="text-white-50 text-decoration-none">Início</a></li>
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li><a href="{% url 'destinations:list' %}" class="text-white-50 text-decoration-none">Visitas & Destinos</a></li>
+                    {% if destination.category %}
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li><a href="{% url 'destinations:list' %}?category={{ destination.category.slug }}" class="text-white-50 text-decoration-none">{{ destination.category.name }}</a></li>
+                    {% endif %}
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li class="text-white fw-semibold">{{ destination.name }}</li>
+                </ol>
+            </nav>
+            {% if destination.category %}
+            <div class="detail-category-badge">
+                <i class="{{ destination.category.icon }}" aria-hidden="true"></i>
+                {{ destination.category.name }}
+            </div>
+            {% endif %}
+            <h1 class="detail-title">{{ destination.name }}</h1>
+            <div class="detail-location">
+                <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                {{ destination.get_province_display }}, Angola
+                {% if destination.address %}· {{ destination.address }}{% endif %}
+                {% if destination.is_verified %}
+                <span class="badge bg-success ms-2" title="{{ destination.verification_criteria }}">
+                    <i class="fas fa-check-circle me-1" aria-hidden="true"></i>Verificado
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="detail-body">
+    <div class="container">
+        <div class="row g-4 g-lg-5">
+            <!-- Coluna Principal -->
+            <div class="col-12 col-lg-7">
+                <div class="order-surface-card mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                        <span class="text-muted small">
+                            <i class="fas fa-eye me-1 text-primary" aria-hidden="true"></i>
+                            {{ destination.visit_count }} visitas ·
+                            <i class="fas fa-clock ms-2 me-1 text-primary" aria-hidden="true"></i>
+                            {{ destination.visit_duration|default:"Meio dia" }}
+                        </span>
+                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="destination">
+                            <input type="hidden" name="item_id" value="{{ destination.pk }}">
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold">
+                                <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> Adicionar ao Planeador
+                            </button>
+                        </form>
+                    </div>
+
+                    <h2 class="h5 fw-bold mb-2">Sobre este Local & Experiência de Visita</h2>
+                    <div class="detail-description mb-4">
+                        {{ destination.description|linebreaks }}
+                    </div>
+
+                    {% if destination.historical_cultural_context %}
+                    <div class="order-sub-card mb-4" style="border-left: 4px solid var(--color-accent);">
+                        <h3 class="h6 fw-bold mb-1">
+                            <i class="fas fa-landmark me-2" style="color: var(--color-accent);" aria-hidden="true"></i>
+                            Valor Histórico, Cultural e Ambiental
+                        </h3>
+                        <p class="small text-muted mb-0">{{ destination.historical_cultural_context }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if destination.activities_available %}
+                    <div class="mb-4">
+                        <h3 class="h6 fw-bold text-uppercase text-muted mb-2">
+                            <i class="fas fa-seedling text-success me-1" aria-hidden="true"></i>
+                            Actividades Disponíveis no Local
+                        </h3>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for act in destination.activities_available %}
+                            <span class="badge bg-light text-dark border py-2 px-3" style="font-size:0.8rem; font-weight:500;">
+                                <i class="fas fa-check text-success me-1" aria-hidden="true"></i> {{ act }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if destination.visit_conditions or destination.host_name %}
+                    <div class="row g-3 mb-3">
+                        {% if destination.host_name %}
+                        <div class="col-12 col-md-6">
+                            <div class="order-sub-card h-100">
+                                <div class="small text-muted">Responsável / Anfitrião</div>
+                                <strong class="small d-block">{{ destination.host_name }}</strong>
+                                {% if destination.contact_phone %}
+                                <small class="text-muted"><i class="fas fa-phone me-1" aria-hidden="true"></i>{{ destination.contact_phone }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if destination.visit_conditions %}
+                        <div class="col-12 col-md-6">
+                            <div class="order-sub-card h-100">
+                                <div class="small text-muted">Condições de Visita</div>
+                                <span class="small d-block text-muted">{{ destination.visit_conditions }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if destination.video_url %}
+                    <div class="order-sub-card d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+                        <div>
+                            <strong class="small d-block"><i class="fas fa-play-circle text-danger me-1" aria-hidden="true"></i>Vídeo da Experiência</strong>
+                            <small class="text-muted">Assista à apresentação audiovisual do destino</small>
+                        </div>
+                        <a href="{{ destination.video_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                            Ver Vídeo <i class="fas fa-external-link-alt ms-1" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if gallery %}
+                <div class="order-surface-card mb-4">
+                    <h2 class="h5 fw-bold mb-3">
+                        <i class="fas fa-images me-2 text-primary" aria-hidden="true"></i>
+                        Galeria de Fotografias
+                    </h2>
+                    <div class="gallery-grid" role="list">
+                        {% for img in gallery %}
+                        <div class="gallery-item" role="listitem">
+                            <img src="{{ img.image.url }}" alt="{{ img.caption|default:destination.name }}" loading="lazy">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if has_map %}
+                <div class="order-surface-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 fw-bold mb-0"><i class="fas fa-map-marked-alt text-primary me-2" aria-hidden="true"></i>Localização & Mapa</h2>
+                        <a href="https://www.google.com/maps?q={{ destination.latitude }},{{ destination.longitude }}"
+                           target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-directions me-1" aria-hidden="true"></i> Abrir no Google Maps
+                        </a>
+                    </div>
+                    <div id="destinationMap" style="height: 280px; border-radius: 12px;" role="application" aria-label="Mapa de {{ destination.name }}"></div>
+                </div>
+                {% endif %}
+
+                <!-- Tours e Experiências Guiadas neste Destino -->
+                {% if related_tours %}
+                <div class="order-surface-card mb-4">
+                    <h2 class="h5 fw-bold mb-3">
+                        <i class="fas fa-route text-primary me-2" aria-hidden="true"></i>
+                        Tours & Experiências Disponíveis neste Destino
+                    </h2>
+                    <div class="d-flex flex-column gap-2">
+                        {% for t in related_tours %}
+                        <a href="{% url 'events:detail' t.slug %}" class="order-sub-card text-decoration-none d-flex align-items-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="{{ t.display_image }}" alt="{{ t.title }}" style="width: 72px; height: 54px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">
+                                <div>
+                                    <span class="badge bg-light text-dark border mb-1" style="font-size:0.65rem;">{{ t.get_activity_type_display }} · {{ t.duration }}</span>
+                                    <div class="fw-bold small text-dark">{{ t.title }}</div>
+                                    <div class="small text-success fw-semibold">{{ t.formatted_price }}</div>
+                                </div>
+                            </div>
+                            <span class="btn btn-sm btn-outline-dark rounded-pill text-nowrap">Ver Tour</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Artigos do Blog Cultural sobre este Destino -->
+                {% if related_articles %}
+                <div class="order-surface-card mb-4">
+                    <h2 class="h5 fw-bold mb-3">
+                        <i class="fas fa-book-open text-primary me-2" aria-hidden="true"></i>
+                        Histórias & Cultura sobre {{ destination.name }}
+                    </h2>
+                    <div class="d-flex flex-column gap-2">
+                        {% for art in related_articles %}
+                        <a href="{% url 'destinations:article_detail' art.slug %}" class="order-sub-card text-decoration-none d-flex align-items-center gap-3">
+                            <img src="{{ art.display_image }}" alt="{{ art.title }}" style="width: 72px; height: 54px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">
+                            <div>
+                                <span class="badge bg-light text-dark border mb-1" style="font-size:0.65rem;">{{ art.get_topic_display }} · {{ art.reading_time_minutes }} min leitura</span>
+                                <div class="fw-bold small text-dark">{{ art.title }}</div>
+                                <small class="text-muted">{{ art.subtitle|truncatechars:85 }}</small>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Coluna Lateral: Informações & Reserva de Visita / Agroturismo -->
+            <div class="col-12 col-lg-5">
+                <div class="order-surface-card sticky-top" style="top: 88px;">
+                    <div class="d-flex justify-content-between align-items-baseline mb-3 pb-3 border-bottom">
+                        <div>
+                            <span class="text-muted small d-block">Taxa / Valor de Visita:</span>
+                            <span class="h4 fw-bold text-primary">{{ destination.formatted_fee_range_aoa }}</span>
+                        </div>
+                        <span class="badge bg-light text-success border">
+                            <i class="fas fa-users me-1" aria-hidden="true"></i>{{ available_spots }} vagas/dia
+                        </span>
+                    </div>
+
+                    <div class="row g-2 mb-3 small">
+                        <div class="col-6">
+                            <div class="order-sub-card py-2">
+                                <span class="text-muted d-block" style="font-size:0.72rem;">Melhor Época</span>
+                                <strong>{{ destination.best_time_to_visit|default:"Todo o ano" }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="order-sub-card py-2">
+                                <span class="text-muted d-block" style="font-size:0.72rem;">Capacidade</span>
+                                <strong>Até {{ destination.max_visitors }} pessoas</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulário de Agendamento / Reserva de Visita -->
+                    <form method="post" action="{% url 'destinations:visit_book' destination.slug %}" class="mb-3">
+                        {% csrf_token %}
+                        <h3 class="h6 fw-bold mb-2">
+                            <i class="fas fa-calendar-check me-1" style="color: var(--color-accent);" aria-hidden="true"></i>
+                            Agendar Visita / Experiência
+                        </h3>
+
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold mb-1" for="id_vis_name">O seu Nome Completo *</label>
+                            <input type="text" id="id_vis_name" name="visitor_name" required class="form-control form-control-sm" placeholder="Ex: Maria Kalupeteka">
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_vis_phone">Telemóvel / WhatsApp *</label>
+                                <input type="tel" id="id_vis_phone" name="visitor_phone" required class="form-control form-control-sm" placeholder="+244 923 000 000">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_vis_email">Email *</label>
+                                <input type="email" id="id_vis_email" name="visitor_email" required class="form-control form-control-sm" placeholder="email@dominio.ao">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_vis_date">Data da Visita *</label>
+                                <input type="date" id="id_vis_date" name="visit_date" value="{{ visit_date }}" required class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold mb-1" for="id_vis_pax">Participantes *</label>
+                                <input type="number" id="id_vis_pax" name="participants_count" min="1" max="{{ available_spots|default:20 }}" value="2" required class="form-control form-control-sm">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold mb-1" for="id_vis_notes">Pedidos ou Interesse Específico</label>
+                            <input type="text" id="id_vis_notes" name="notes" class="form-control form-control-sm" placeholder="Ex: Visita guiada à fazenda, degustação...">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 justify-content-center py-2 fw-bold">
+                            <i class="fas fa-check-circle me-2" aria-hidden="true"></i> Confirmar Agendamento de Visita
+                        </button>
+                    </form>
+
+                    <div class="d-flex flex-column gap-2 pt-2 border-top">
+                        <a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer"
+                           class="btn btn-outline-success btn-sm py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                            <i class="fab fa-whatsapp" aria-hidden="true"></i> Contactar Anfitrião no WhatsApp
+                        </a>
+                        <a href="{% url 'destinations:list' %}" class="btn btn-outline-secondary btn-sm py-2">
+                            <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Voltar a Visitas & Destinos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_map %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const lat = parseFloat("{{ destination.latitude }}".replace(',', '.'));
+    const lng = parseFloat("{{ destination.longitude }}".replace(',', '.'));
+    if (isNaN(lat) || isNaN(lng)) return;
+    const map = L.map('destinationMap', { center: [lat, lng], zoom: 12, scrollWheelZoom: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18,
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup("<strong>{{ destination.name|escapejs }}</strong>").openPopup();
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ acc.name }} — Alojamento & Reservas{% endblock %}
+{% block meta_description %}{{ acc.short_description }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accommodations.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="acc-page">
+
+    <!-- Hero -->
+    <section class="acc-detail-hero"
+             style="background-image: url('{{ acc.display_image }}');">
+        <div class="acc-detail-overlay"></div>
+        <div class="container position-relative">
+            <nav aria-label="Navegação de contexto" class="mb-3">
+                <ol class="d-flex align-items-center gap-2 list-unstyled text-white-50 small mb-0 flex-wrap">
+                    <li><a href="{% url 'core:home' %}" class="text-white-50 text-decoration-none">Início</a></li>
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li><a href="{% url 'accommodations:list' %}" class="text-white-50 text-decoration-none">Alojamento</a></li>
+                    <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                    <li class="text-white fw-bold">{{ acc.name }}</li>
+                </ol>
+            </nav>
+
+            <span class="acc-hero-badge mb-2">
+                {% if is_dict %}{{ acc.accommodation_type_label }}{% else %}{{ acc.get_accommodation_type_display }}{% endif %}
+            </span>
+            <h1 class="display-5 fw-bold text-white mb-2">{{ acc.name }}</h1>
+            <p class="text-white-50 mb-0">
+                <i class="fas fa-map-marker-alt text-warning me-1" aria-hidden="true"></i>
+                {% if is_dict %}{{ acc.city }}, {{ acc.province_label }}{% else %}{{ acc.city }}, {{ acc.get_province_display }}{% endif %}
+                · <i class="fas fa-star text-warning ms-2 me-1" aria-hidden="true"></i> {{ acc.rating }} ({{ acc.review_count }} avaliações)
+                {% if not is_dict and acc.is_verified %}
+                <span class="badge bg-success ms-2" title="{{ acc.verification_criteria }}"><i class="fas fa-check-circle me-1" aria-hidden="true"></i>Verificado</span>
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    <div class="container py-5">
+
+        <!-- Barra de Consulta de Disponibilidade para Período Específico -->
+        <div class="order-surface-card mb-4">
+            <form method="get" action="{% url 'accommodations:detail' acc.slug %}" class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <div class="fw-bold small text-uppercase text-muted mb-1">
+                        <i class="fas fa-calendar-alt text-primary me-1" aria-hidden="true"></i>Consultar Disponibilidade por Período
+                    </div>
+                    <div class="small text-muted">Verifique as unidades e tipologias livres para as suas datas</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1" for="id_period_in">Data de Entrada</label>
+                    <input type="date" id="id_period_in" name="check_in" value="{{ check_in }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1" for="id_period_out">Data de Saída</label>
+                    <input type="date" id="id_period_out" name="check_out" value="{{ check_out }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-sm btn-primary-custom w-100 justify-content-center py-2">
+                        <i class="fas fa-sync-alt me-1" aria-hidden="true"></i> Consultar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="row g-4 g-lg-5">
+
+            <!-- Coluna Principal: Tipologias Hoteleiras ou Detalhes de Curta Duração -->
+            <div class="col-12 col-lg-7">
+
+                <!-- 1. TIPOLOGIAS DE QUARTOS E SUITES (Hotelaria) -->
+                {% if room_types_status %}
+                <div class="order-surface-card mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <div>
+                            <h2 class="h5 fw-bold mb-0">
+                                <i class="fas fa-bed text-primary me-2" aria-hidden="true"></i>Tipologias de Quartos & Suites Disponíveis
+                            </h2>
+                            <small class="text-muted">
+                                Período seleccionado: <strong>{{ check_in_date|date:"d/m/Y" }}</strong> a <strong>{{ check_out_date|date:"d/m/Y" }}</strong> ({{ nights }} noite{{ nights|pluralize:"s" }})
+                            </small>
+                        </div>
+                        <span class="badge bg-light text-dark border">{{ room_types_status|length }} tipologias</span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+                        {% for rt in room_types_status %}
+                        <div class="order-sub-card {% if not rt.is_available %}opacity-75{% endif %}" id="room-card-{{ rt.id }}">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-12 col-sm-4">
+                                    <img src="{{ rt.display_image }}" alt="{{ rt.name }}" class="w-100 rounded-3" style="height: 135px; object-fit: cover;" loading="lazy">
+                                </div>
+                                <div class="col-12 col-sm-8">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-1">
+                                        <div>
+                                            <span class="badge bg-white text-dark border mb-1" style="font-size:0.68rem;">{{ rt.category_label }}</span>
+                                            <h3 class="h6 fw-bold mb-1">{{ rt.name }}</h3>
+                                        </div>
+                                        {% if rt.is_available %}
+                                        <span class="badge bg-success-subtle text-success border">
+                                            <i class="fas fa-check-circle me-1" aria-hidden="true"></i>{{ rt.available_units }} de {{ rt.total_units }} disponíveis
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1" aria-hidden="true"></i>Esgotado nestas datas
+                                        </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <p class="small text-muted mb-2">{{ rt.description }}</p>
+
+                                    <div class="d-flex flex-wrap gap-3 small text-muted mb-2" style="font-size:0.78rem;">
+                                        <span><i class="fas fa-user-friends text-primary me-1" aria-hidden="true"></i>Até {{ rt.capacity_guests }} hóspede{{ rt.capacity_guests|pluralize:"s" }}</span>
+                                        <span><i class="fas fa-bed text-primary me-1" aria-hidden="true"></i>{{ rt.bed_configuration }} ({{ rt.beds_count }} cama{{ rt.beds_count|pluralize:"s" }})</span>
+                                    </div>
+
+                                    {% if rt.amenities %}
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        {% for am in rt.amenities %}
+                                        <span class="badge bg-white text-dark border" style="font-size:0.65rem; font-weight:500;">{{ am }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top mt-2">
+                                        <div>
+                                            <strong class="fs-6 text-primary">{{ rt.formatted_price_aoa }}</strong><small class="text-muted">/noite</small>
+                                            <span class="small text-muted d-block" style="font-size:0.73rem;">Total {{ nights }} noite{{ nights|pluralize:"s" }}: <strong>{{ rt.period_total_aoa }}</strong></span>
+                                        </div>
+                                        {% if rt.is_available %}
+                                        <button type="button"
+                                                class="btn btn-sm btn-primary-custom rounded-pill px-3"
+                                                onclick="selectRoomType('{{ rt.id }}', '{{ rt.price_per_night_aoa }}', '{{ rt.available_units }}', '{{ rt.capacity_guests }}')">
+                                            <i class="fas fa-check me-1" aria-hidden="true"></i> Seleccionar Quarto
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" disabled>
+                                            Indisponível
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 2. Descrição, Comodidades, Regras e Condições -->
+                <div class="order-surface-card mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                        <h2 class="h5 fw-bold mb-0">Sobre este Alojamento</h2>
+                        {% if not is_dict %}
+                        <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="accommodation">
+                            <input type="hidden" name="item_id" value="{{ acc.pk }}">
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold">
+                                <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> Incluir no Planeador
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+
+                    <div class="text-muted leading-relaxed mb-4">
+                        {% if is_dict %}{{ acc.description }}{% else %}{{ acc.description|linebreaks }}{% endif %}
+                    </div>
+
+                    <h3 class="h6 fw-bold text-uppercase text-muted mb-3">Capacidade & Estrutura</h3>
+                    <div class="row g-3 text-center mb-4">
+                        <div class="col-4">
+                            <div class="order-sub-card">
+                                <i class="fas fa-users text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Capacidade</div>
+                                <strong>Até {{ acc.max_guests }} hóspedes</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="order-sub-card">
+                                <i class="fas fa-bed text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Quartos</div>
+                                <strong>{{ acc.bedrooms }} Quarto{{ acc.bedrooms|pluralize:"s" }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="order-sub-card">
+                                <i class="fas fa-bath text-primary mb-1" aria-hidden="true"></i>
+                                <div class="small text-muted">Casas de Banho</div>
+                                <strong>{{ acc.bathrooms }} WC</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if not is_dict and acc.amenities %}
+                    <h3 class="h6 fw-bold text-uppercase text-muted mb-2">Comodidades Incluídas</h3>
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        {% for am in acc.amenities %}
+                        <span class="acc-amenity-badge"><i class="fas fa-check text-success" aria-hidden="true"></i> {{ am }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if not is_dict %}
+                    <div class="row g-3 mb-3">
+                        {% if acc.house_rules %}
+                        <div class="col-12 col-md-6">
+                            <div class="order-sub-card h-100">
+                                <h4 class="small fw-bold text-uppercase text-muted mb-1">
+                                    <i class="fas fa-clipboard-list text-primary me-1" aria-hidden="true"></i>Regras da Estadia
+                                </h4>
+                                <p class="small text-muted mb-0">{{ acc.house_rules }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if acc.booking_conditions %}
+                        <div class="col-12 col-md-6">
+                            <div class="order-sub-card h-100">
+                                <h4 class="small fw-bold text-uppercase text-muted mb-1">
+                                    <i class="fas fa-file-contract text-primary me-1" aria-hidden="true"></i>Condições de Reserva
+                                </h4>
+                                <p class="small text-muted mb-0">{{ acc.booking_conditions }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if acc.address %}
+                    <div class="border-top pt-3 small text-muted">
+                        <i class="fas fa-map-pin text-primary me-1" aria-hidden="true"></i>
+                        Localização: <strong>{{ acc.address }}, {{ acc.city }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 3. Avaliações Verificadas -->
+                {% if not is_dict %}
+                <div class="order-surface-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="h5 fw-bold mb-0"><i class="fas fa-star text-warning me-2" aria-hidden="true"></i>Avaliações de Hóspedes</h3>
+                        <span class="badge bg-light text-dark border">Estadias verificadas</span>
+                    </div>
+
+                    {% if reviews %}
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        {% for rev in reviews %}
+                        <div class="order-sub-card">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div>
+                                    <strong>{{ rev.guest_name }}</strong>
+                                    <span class="badge bg-success-subtle text-success border ms-2" style="font-size:0.68rem;">
+                                        Reserva #{{ rev.booking_reference }}
+                                    </span>
+                                </div>
+                                <div class="text-warning small fw-bold">{{ rev.rating }} ★</div>
+                            </div>
+                            <p class="mb-1 small text-muted">{{ rev.comment }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'accommodations:review' acc.slug %}" class="border-top pt-3">
+                        {% csrf_token %}
+                        <h4 class="h6 fw-bold mb-2">Avaliar com Código de Reserva Concluída</h4>
+                        <div class="row g-2 mb-2">
+                            <div class="col-sm-7">
+                                <input type="text" name="booking_reference" required class="form-control form-control-sm" placeholder="Código da Reserva (ex: DB-A1B2C3)">
+                            </div>
+                            <div class="col-sm-5">
+                                <select name="rating" class="form-select form-select-sm" aria-label="Classificação">
+                                    <option value="5">5 ★ — Excelente</option>
+                                    <option value="4">4 ★ — Muito Bom</option>
+                                    <option value="3">3 ★ — Bom</option>
+                                    <option value="2">2 ★ — Regular</option>
+                                    <option value="1">1 ★ — Fraco</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <textarea name="comment" rows="2" required class="form-control form-control-sm" placeholder="Partilhe a sua experiência..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            Publicar Avaliação Verificada
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <a href="{% url 'accommodations:list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Voltar aos Alojamentos
+                </a>
+            </div>
+
+            <!-- Coluna Lateral: Reserva com Gestão Real de Inventário -->
+            <div class="col-12 col-lg-5">
+                <div class="acc-booking-card" id="bookingBoxCard">
+                    <div class="d-flex justify-content-between align-items-baseline mb-3 pb-3 border-bottom">
+                        <div>
+                            <span class="h4 fw-bold text-primary" id="headerRateDisplay">
+                                {% if is_dict %}{{ acc.formatted_price_aoa }}{% else %}{{ acc.formatted_price_range_aoa }}{% endif %}
+                            </span>
+                            <span class="text-muted small d-block">por noite em Kz</span>
+                        </div>
+                        {% if acc_available_units > 0 %}
+                        <span class="badge bg-success-subtle text-success border">
+                            <i class="fas fa-check-circle me-1" aria-hidden="true"></i>{{ acc_available_units }} unidade{{ acc_available_units|pluralize:"s" }} livre{{ acc_available_units|pluralize:"s" }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-danger">Sem vagas nestas datas</span>
+                        {% endif %}
+                    </div>
+
+                    <form method="post" action="{% url 'accommodations:book' acc.slug %}" id="bookingForm">
+                        {% csrf_token %}
+
+                        {% if room_types_status %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold" for="roomTypeSelect">Tipologia de Quarto / Suite *</label>
+                            <select name="room_type_id" id="roomTypeSelect" class="form-select">
+                                {% for rt in room_types_status %}
+                                <option value="{{ rt.id }}"
+                                        data-price="{{ rt.price_per_night_aoa }}"
+                                        data-avail="{{ rt.available_units }}"
+                                        data-cap="{{ rt.capacity_guests }}"
+                                        {% if not rt.is_available %}disabled{% endif %}>
+                                    {{ rt.name }} — {{ rt.formatted_price_aoa }}/noite ({{ rt.available_units }} disp.)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold" for="checkInInput">Check-in (Entrada) *</label>
+                                <input type="date" name="check_in" id="checkInInput" value="{{ check_in }}" required class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold" for="checkOutInput">Check-out (Saída) *</label>
+                                <input type="date" name="check_out" id="checkOutInput" value="{{ check_out }}" required class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold" for="guestsCountInput">Nº de Hóspedes *</label>
+                                <input type="number" name="guests_count" id="guestsCountInput" min="1" max="15" value="{{ guests_selected }}" required class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold" for="unitsReservedInput">Nº de Unidades / Quartos</label>
+                                <input type="number" name="units_reserved" id="unitsReservedInput" min="1" max="{{ acc_available_units|default:5 }}" value="1" required class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold" for="guestNameInput">Nome Completo *</label>
+                            <input type="text" id="guestNameInput" name="guest_name" required class="form-control" placeholder="Ex: Manuel Silva">
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold" for="guestEmailInput">Email *</label>
+                                <input type="email" id="guestEmailInput" name="guest_email" required class="form-control" placeholder="nome@email.ao">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold" for="guestPhoneInput">Telefone / WhatsApp *</label>
+                                <input type="tel" id="guestPhoneInput" name="guest_phone" required class="form-control" placeholder="+244 923 000 000">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold" for="specialRequestsInput">Pedidos Especiais (Opcional)</label>
+                            <textarea id="specialRequestsInput" name="special_requests" class="form-control" rows="2" placeholder="Ex: Cama extra, check-in tardio..."></textarea>
+                        </div>
+
+                        <!-- Resumo Dinâmico -->
+                        <div class="order-sub-card mb-3" id="priceSummaryBox">
+                            <div class="d-flex justify-content-between text-muted small mb-1">
+                                <span>Duração da estadia:</span>
+                                <span id="nightsCount" class="fw-bold">{{ nights }} noite{{ nights|pluralize:"s" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between h6 fw-bold mb-0 pt-2 border-top">
+                                <span>Total Previsto:</span>
+                                <span class="text-primary" id="totalPriceCalc">{{ acc.formatted_price_aoa }}</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 justify-content-center py-2 fs-6" {% if acc_available_units <= 0 %}disabled{% endif %}>
+                            <i class="fas fa-calendar-check me-2" aria-hidden="true"></i> Confirmar Reserva Online
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <a href="https://wa.me/{{ acc.contact_whatsapp|default:'+244923111222'|cut:'+'|cut:' ' }}?text=Ol%C3%A1!%20Gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20{{ acc.name|urlencode }}"
+                           target="_blank" rel="noopener noreferrer"
+                           class="btn btn-outline-success btn-sm w-100">
+                            <i class="fab fa-whatsapp me-1" aria-hidden="true"></i> Falar com a Recepção via WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectRoomType(rtId, price, avail, cap) {
+    const sel = document.getElementById('roomTypeSelect');
+    if (sel) {
+        sel.value = rtId;
+        sel.dispatchEvent(new Event('change'));
+    }
+    const card = document.getElementById('bookingBoxCard');
+    if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const checkIn = document.getElementById('checkInInput');
+    const checkOut = document.getElementById('checkOutInput');
+    const roomSelect = document.getElementById('roomTypeSelect');
+    const unitsInput = document.getElementById('unitsReservedInput');
+    const nightsCount = document.getElementById('nightsCount');
+    const totalPriceCalc = document.getElementById('totalPriceCalc');
+
+    const basePrice = parseFloat("{{ acc.price_per_night_aoa }}".replace(',', '.')) || 50000;
+
+    function getActiveNightlyPrice() {
+        if (roomSelect && roomSelect.selectedOptions.length > 0) {
+            const p = parseFloat(roomSelect.selectedOptions[0].getAttribute('data-price'));
+            if (!isNaN(p)) return p;
+        }
+        return basePrice;
+    }
+
+    function recalculate() {
+        if (!checkIn.value || !checkOut.value) return;
+        const d1 = new Date(checkIn.value);
+        const d2 = new Date(checkOut.value);
+        const diffDays = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+        const units = Math.max(1, parseInt(unitsInput ? unitsInput.value : 1, 10) || 1);
+
+        if (diffDays > 0) {
+            nightsCount.textContent = diffDays + (diffDays === 1 ? ' noite' : ' noites') + (units > 1 ? ' × ' + units + ' unid.' : '');
+            const total = diffDays * getActiveNightlyPrice() * units;
+            totalPriceCalc.textContent = Math.round(total).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Kz';
+        } else {
+            nightsCount.textContent = 'Datas inválidas';
+            totalPriceCalc.textContent = '---';
+        }
+    }
+
+    if (checkIn) checkIn.addEventListener('change', recalculate);
+    if (checkOut) checkOut.addEventListener('change', recalculate);
+    if (roomSelect) roomSelect.addEventListener('change', recalculate);
+    if (unitsInput) unitsInput.addEventListener('input', recalculate);
+    recalculate();
+});
+</script>
+{% endblock %}

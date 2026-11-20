@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.title }} — Blog Cultural{% endblock %}
+{% block meta_description %}{{ article.subtitle|default:article.summary|truncatechars:160 }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/destinations.css' %}">
+{% endblock %}
+
+{% block content %}
+<article class="pb-5">
+    <!-- Hero Editorial do Artigo -->
+    <section class="detail-hero" aria-label="{{ article.title }}">
+        <img src="{{ article.display_image }}" alt="{{ article.title }}" class="detail-hero-img">
+        <div class="detail-hero-overlay" aria-hidden="true"></div>
+        <div class="detail-hero-content">
+            <div class="container">
+                <nav aria-label="Navegação" class="mb-3">
+                    <ol class="d-flex align-items-center gap-2 list-unstyled small mb-0 flex-wrap" style="color:rgba(255,255,255,0.75);">
+                        <li><a href="{% url 'core:home' %}" class="text-white-50 text-decoration-none">Início</a></li>
+                        <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                        <li><a href="{% url 'destinations:article_list' %}" class="text-white-50 text-decoration-none">Blog Cultural</a></li>
+                        <li><i class="fas fa-chevron-right" style="font-size:0.7rem;" aria-hidden="true"></i></li>
+                        <li class="text-white fw-semibold">{{ article.title|truncatechars:45 }}</li>
+                    </ol>
+                </nav>
+                <div class="detail-category-badge">
+                    <i class="fas fa-feather-alt" aria-hidden="true"></i>
+                    {{ article.get_topic_display }}
+                </div>
+                <h1 class="detail-title">{{ article.title }}</h1>
+                {% if article.subtitle %}
+                <p class="lead text-white-50 mb-2" style="max-width: 780px; color: rgba(255,255,255,0.85) !important;">{{ article.subtitle }}</p>
+                {% endif %}
+                <div class="detail-location">
+                    <i class="fas fa-user-edit" aria-hidden="true"></i>
+                    Por <strong>{{ article.author_name }}</strong>
+                    {% if article.author_role %}({{ article.author_role }}){% endif %}
+                    · <i class="fas fa-map-marker-alt ms-2" aria-hidden="true"></i>
+                    {{ article.location_name|default:article.get_province_display }}
+                    · <i class="fas fa-clock ms-2" aria-hidden="true"></i>
+                    {{ article.reading_time_minutes }} min de leitura
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container py-5">
+        <div class="row g-4 g-lg-5">
+            <!-- Corpo Editorial Estruturado por Secções -->
+            <div class="col-12 col-lg-8">
+                <div class="order-surface-card mb-4">
+                    {% if article.image_caption or article.photographer_credit %}
+                    <div class="small text-muted pb-3 mb-4 border-bottom d-flex justify-content-between flex-wrap gap-2">
+                        <span><i class="fas fa-camera me-1" aria-hidden="true"></i>{{ article.image_caption }}</span>
+                        <span>Créditos: <strong>{{ article.photographer_credit }}</strong></span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Resumo / Lead -->
+                    <p class="fs-5 fw-semibold mb-4" style="line-height: 1.65; color: var(--color-primary);">
+                        {{ article.summary }}
+                    </p>
+
+                    <!-- Texto Principal -->
+                    <div class="detail-description mb-4" style="font-size: 1.04rem; line-height: 1.85;">
+                        {{ article.content|linebreaks }}
+                    </div>
+
+                    <!-- Secções Estruturadas do Artigo -->
+                    {% if article.sections %}
+                    {% for sec in article.sections %}
+                    <section class="mb-4 pt-2">
+                        {% if sec.heading %}
+                        <h2 class="h4 fw-bold mb-3" style="font-family: var(--font-display); color: var(--color-primary);">
+                            {{ sec.heading }}
+                        </h2>
+                        {% endif %}
+                        {% if sec.body %}
+                        <p class="text-muted mb-3" style="font-size: 1.02rem; line-height: 1.8;">{{ sec.body }}</p>
+                        {% endif %}
+                        {% if sec.quote %}
+                        <blockquote class="order-sub-card my-3 fst-italic" style="border-left: 4px solid var(--color-accent);">
+                            "{{ sec.quote }}"
+                        </blockquote>
+                        {% endif %}
+                    </section>
+                    {% endfor %}
+                    {% endif %}
+
+                    <!-- Galeria Fotográfica do Artigo com Legendas e Créditos -->
+                    {% if article.gallery_images %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h3 class="h5 fw-bold mb-3"><i class="fas fa-images text-primary me-2" aria-hidden="true"></i>Galeria Documental</h3>
+                        <div class="row g-3">
+                            {% for g_img in article.gallery_images %}
+                            <div class="col-12 col-md-6">
+                                <figure class="order-sub-card p-2 m-0 h-100">
+                                    <img src="{{ g_img.url }}" alt="{{ g_img.caption|default:article.title }}" class="w-100 rounded-3 mb-2" style="height: 190px; object-fit: cover;" loading="lazy">
+                                    {% if g_img.caption %}
+                                    <figcaption class="small fw-semibold">{{ g_img.caption }}</figcaption>
+                                    {% endif %}
+                                    {% if g_img.credit %}
+                                    <small class="text-muted d-block" style="font-size:0.72rem;">{{ g_img.credit }}</small>
+                                    {% endif %}
+                                </figure>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Vídeo Documental -->
+                    {% if article.video_url %}
+                    <div class="order-sub-card d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
+                        <div>
+                            <strong class="small d-block"><i class="fas fa-video text-danger me-1" aria-hidden="true"></i>Registo Audiovisual Complementar</strong>
+                            <small class="text-muted">Assista ao vídeo documental associado a este artigo</small>
+                        </div>
+                        <a href="{{ article.video_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                            Assistir Vídeo <i class="fas fa-external-link-alt ms-1" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Etiquetas / Tags -->
+                    {% if article.tags %}
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-4 pt-3 border-top">
+                        <span class="small fw-bold text-muted">Etiquetas:</span>
+                        {% for tag in article.tags %}
+                        <a href="{% url 'destinations:article_list' %}?tag={{ tag|urlencode }}" class="badge bg-light text-dark border text-decoration-none py-2 px-3">#{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <a href="{% url 'destinations:article_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Voltar ao Blog Cultural
+                </a>
+            </div>
+
+            <!-- Coluna Lateral: Integração Inteligente com Destino, Visitas e Tours -->
+            <div class="col-12 col-lg-4">
+                <div class="d-flex flex-column gap-4 sticky-top" style="top: 88px;">
+
+                    {% if article.destination %}
+                    <div class="order-surface-card">
+                        <span class="badge rounded-pill mb-2" style="background: var(--color-primary);">
+                            <i class="fas fa-compass me-1" aria-hidden="true"></i> Visite Este Lugar
+                        </span>
+                        <h3 class="h6 fw-bold mb-2">Destino: {{ article.destination.name }}</h3>
+                        <img src="{{ article.destination.display_image }}" alt="{{ article.destination.name }}" class="w-100 rounded-3 mb-2" style="height: 150px; object-fit: cover;">
+                        <p class="small text-muted mb-3">{{ article.destination.short_description }}</p>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'destinations:detail' article.destination.slug %}" class="btn btn-primary-custom btn-sm justify-content-center">
+                                <i class="fas fa-map-marked-alt me-1" aria-hidden="true"></i> Ver Destino & Agendar Visita
+                            </a>
+                            <form method="post" action="{% url 'routes:plan_add' %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="item_type" value="destination">
+                                <input type="hidden" name="item_id" value="{{ article.destination.pk }}">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                    <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> Incluir no Meu Roteiro
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if article.related_tour or destination_tours %}
+                    <div class="order-surface-card">
+                        <span class="badge rounded-pill mb-2" style="background: var(--color-accent);">
+                            <i class="fas fa-route me-1" aria-hidden="true"></i> Experiência Guiada no Local
+                        </span>
+                        <h3 class="h6 fw-bold mb-3">Viva esta História no Terreno</h3>
+                        {% if article.related_tour %}
+                        <div class="order-sub-card mb-2">
+                            <div class="fw-bold small mb-1">{{ article.related_tour.title }}</div>
+                            <div class="small text-muted mb-2">{{ article.related_tour.duration }} · <strong class="text-success">{{ article.related_tour.formatted_price }}</strong></div>
+                            <a href="{% url 'events:detail' article.related_tour.slug %}" class="btn btn-sm btn-dark w-100 rounded-pill">
+                                Ver Tour & Reservar Vaga
+                            </a>
+                        </div>
+                        {% else %}
+                        {% for t in destination_tours %}
+                        <div class="order-sub-card mb-2">
+                            <div class="fw-bold small mb-1">{{ t.title }}</div>
+                            <div class="small text-muted mb-2">{{ t.duration }} · <strong class="text-success">{{ t.formatted_price }}</strong></div>
+                            <a href="{% url 'events:detail' t.slug %}" class="btn btn-sm btn-dark w-100 rounded-pill">
+                                Ver Tour & Reservar Vaga
+                            </a>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if related_articles %}
+                    <div class="order-surface-card">
+                        <h3 class="h6 fw-bold mb-3">Artigos Relacionados</h3>
+                        <div class="d-flex flex-column gap-2">
+                            {% for rel in related_articles %}
+                            <a href="{% url 'destinations:article_detail' rel.slug %}" class="order-sub-card text-decoration-none d-flex align-items-center gap-2">
+                                <img src="{{ rel.display_image }}" alt="{{ rel.title }}" style="width: 58px; height: 46px; object-fit: cover; border-radius: 6px; flex-shrink: 0;">
+                                <div class="small fw-semibold text-dark">{{ rel.title|truncatechars:58 }}</div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+{% endblock %}

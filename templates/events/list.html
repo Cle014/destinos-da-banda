@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tours, Experiências Turísticas e Eventos{% endblock %}
+{% block meta_description %}Descubra e reserve tours guiadas, experiências de agroturismo, circuitos culturais e eventos verificados no Huambo e em Angola.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/events.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="events-page">
+
+    <!-- Header de Tours, Experiências & Eventos -->
+    <section class="events-header">
+        <div class="container">
+            <div class="events-eyebrow">
+                <i class="fas fa-compass" aria-hidden="true"></i>
+                Tours Guiadas, Experiências & Eventos
+            </div>
+            <h1 class="events-title">Tours & Experiências Turísticas</h1>
+            <p class="events-subtitle">
+                Expedições de montanha, vivências de agroturismo em fazendas, roteiros históricos acompanhados por guias locais e celebrações culturais com reserva directa de vagas.
+            </p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Barra de Filtros -->
+        <div class="events-filters-bar">
+            <form method="get" action="{% url 'events:list' %}" class="row g-3 align-items-center">
+                <div class="col-12 col-xl-6">
+                    <div class="events-type-pills">
+                        <a href="{% url 'events:list' %}"
+                           class="event-pill {% if not selected_type and not selected_category %}active{% endif %}">
+                            <i class="fas fa-layer-group" aria-hidden="true"></i> Todas ({{ total_count }})
+                        </a>
+                        <a href="?type=tour{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                           class="event-pill {% if selected_type == 'tour' %}active{% endif %}">
+                            <i class="fas fa-route" aria-hidden="true"></i> Tours Guiadas
+                        </a>
+                        <a href="?category=agroturismo{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                           class="event-pill {% if selected_category == 'agroturismo' %}active{% endif %}">
+                            <i class="fas fa-tractor" aria-hidden="true"></i> Agroturismo
+                        </a>
+                        <a href="?type=turistica{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                           class="event-pill {% if selected_type == 'turistica' %}active{% endif %}">
+                            <i class="fas fa-mountain" aria-hidden="true"></i> Aventura
+                        </a>
+                        <a href="?type=cultural{% if selected_province %}&province={{ selected_province }}{% endif %}"
+                           class="event-pill {% if selected_type == 'cultural' %}active{% endif %}">
+                            <i class="fas fa-landmark" aria-hidden="true"></i> Cultura
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-2">
+                    <select name="category" class="form-select form-select-sm" aria-label="Filtrar por categoria" onchange="this.form.submit()">
+                        <option value="">Todas Categorias</option>
+                        {% for cat_val, cat_label in categories %}
+                        <option value="{{ cat_val }}" {% if selected_category == cat_val %}selected{% endif %}>
+                            {{ cat_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-xl-2">
+                    <select name="province" class="form-select form-select-sm" aria-label="Filtrar por província" onchange="this.form.submit()">
+                        <option value="">Todas Províncias</option>
+                        {% for prov_val, prov_label in provinces %}
+                        <option value="{{ prov_val }}" {% if selected_province == prov_val %}selected{% endif %}>
+                            {{ prov_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-9 col-xl-1">
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Pesquisar..." aria-label="Pesquisar tour ou evento" class="form-control form-control-sm">
+                </div>
+
+                <div class="col-3 col-xl-1 text-end">
+                    <button type="submit" class="btn btn-sm btn-primary-custom w-100" aria-label="Pesquisar">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Grelha de Tours & Experiências -->
+        {% if events %}
+        <div class="events-grid">
+            {% for evt in events %}
+            <a href="{% url 'events:detail' evt.slug %}" class="event-card" data-aos="fade-up">
+                <div class="event-card-img-wrap">
+                    <img src="{{ evt.display_image }}" alt="{{ evt.title }}" class="event-card-img" loading="lazy">
+                    <div class="event-date-block">
+                        <div class="event-date-day">{{ evt.start_day }}</div>
+                        <div class="event-date-month">{{ evt.start_month }}</div>
+                    </div>
+                    <span class="event-badge-price">
+                        {{ evt.formatted_price }}
+                    </span>
+                </div>
+                <div class="event-card-body">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+                        <div class="event-card-meta mb-0">
+                            <span><i class="fas fa-tag" aria-hidden="true"></i> {{ evt.category_label }}</span>
+                            <span>·</span>
+                            <span><i class="fas fa-map-marker-alt" aria-hidden="true"></i> {{ evt.province_label }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            {% if evt.availability_key == 'sold_out' %}
+                            <span class="badge bg-danger" style="font-size:0.65rem;">Esgotado</span>
+                            {% elif evt.availability_key == 'last_spots' %}
+                            <span class="badge bg-warning text-dark" style="font-size:0.65rem;">{{ evt.availability_label }}</span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success border" style="font-size:0.65rem;">
+                                <i class="fas fa-users me-1" aria-hidden="true"></i>{{ evt.availability_label }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h2 class="event-card-title">{{ evt.title }}</h2>
+                    <p class="event-card-sub">{{ evt.subtitle|default:evt.description|truncatechars:115 }}</p>
+
+                    {% if evt.included_services %}
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        {% for srv in evt.included_services|slice:":3" %}
+                        <span class="badge bg-light text-dark border" style="font-size:0.68rem; font-weight:500;">
+                            <i class="fas fa-check text-success me-1" aria-hidden="true"></i>{{ srv }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="event-card-footer">
+                        <span class="text-muted small">
+                            <i class="fas fa-clock text-primary me-1" aria-hidden="true"></i> {{ evt.duration|default:evt.time_schedule|default:"Dia inteiro" }}
+                        </span>
+                        <span class="fw-bold text-primary small">
+                            Ver tour & reservar <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 order-surface-card mb-5">
+            <i class="fas fa-calendar-times fa-3x text-muted mb-3" aria-hidden="true"></i>
+            <h3>Nenhuma experiência encontrada</h3>
+            <p class="text-muted">Não foram encontradas tours ou actividades para os filtros seleccionados.</p>
+            <a href="{% url 'events:list' %}" class="btn btn-primary-custom mt-2">Ver todas as tours e eventos</a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
